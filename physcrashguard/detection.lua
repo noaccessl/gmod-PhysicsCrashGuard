@@ -25,7 +25,7 @@ local Resolve		= physcrashguard.Resolve
 --[[---------------------------------------------------------------------------
 	Detect Hang
 ---------------------------------------------------------------------------]]
-timer.Create( 'physcrashguard.DetectHang', 0, 0, function()
+hook.Add( 'Tick', 'physcrashguard.DetectHang', function()
 
 	if IsThereHang() then
 
