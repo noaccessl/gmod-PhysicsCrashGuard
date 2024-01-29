@@ -16,6 +16,10 @@ function physcrashguard.Iterator()
 
 		for num, ent in ipairs( ents.GetAll() ) do
 
+			if ent:IsPlayer() or ent:IsWorld() then
+				continue
+			end
+
 			local pObj = ent:GetPhysicsObject()
 
 			if pObj:IsValid() then
