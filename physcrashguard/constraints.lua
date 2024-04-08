@@ -1,10 +1,10 @@
---[[---------------------------------------------------------------------------
+--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Fix for sliders
 
 	Sliders will crash the game if:
 	1. Two connected objects are too far away.
 	2. They are bitching too much. (Consequence from the first point.)
----------------------------------------------------------------------------]]
+–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local MAX_DISTANCE = 6656
 
 hook.Add( 'OnEntityCreated', 'physcrashguard.FixSliders', function( ent )
