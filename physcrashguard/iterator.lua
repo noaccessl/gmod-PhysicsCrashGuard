@@ -3,6 +3,14 @@
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local iter = ipairs( {} )
 
+local ITER_PROHIBITED = {
+
+	prop_door_rotating = true;
+	prop_dynamic = true
+
+}
+
+
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Iterator for physics objects
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
@@ -16,7 +24,13 @@ function physcrashguard.Iterator()
 
 		for num, ent in ipairs( ents.GetAll() ) do
 
-			if ent:IsPlayer() or ent:IsWorld() then
+			local strClass = ent:GetClass()
+
+			if ITER_PROHIBITED[ ent:GetClass() ] or string.sub( strClass, 1, 5 ) == 'func_' then
+				continue
+			end
+
+			if ent:IsVehicle() or ent:IsPlayer() or ent:IsWorld() or ent:IsNPC() then
 				continue
 			end
 
