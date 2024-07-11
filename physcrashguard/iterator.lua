@@ -26,7 +26,7 @@ function physcrashguard.Iterator()
 
 			local strClass = ent:GetClass()
 
-			if ITER_PROHIBITED[ ent:GetClass() ] or string.sub( strClass, 1, 5 ) == 'func_' then
+			if ITER_PROHIBITED[ strClass ] or string.sub( strClass, 1, 5 ) == 'func_' then
 				continue
 			end
 
