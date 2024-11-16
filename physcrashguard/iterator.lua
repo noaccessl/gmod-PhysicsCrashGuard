@@ -1,58 +1,119 @@
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+
+	Iterator for all non-static physics objects that may potentially collide
+
+–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+
+
+--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Prepare
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local iter = ipairs( {} )
+--
+-- Metamethods: Entity, PhysObj
+--
+local ENTITY = FindMetaTable( 'Entity' )
 
-local ITER_PROHIBITED = {
+local GetClass = ENTITY.GetClass
+
+local IsVehicle = ENTITY.IsVehicle
+local IsPlayer	= ENTITY.IsPlayer
+local IsWorld	= ENTITY.IsWorld
+local IsNPC		= ENTITY.IsNPC
+
+local GetPhysicsObjectCount = ENTITY.GetPhysicsObjectCount
+local GetPhysicsObjectNum	= ENTITY.GetPhysicsObjectNum
+
+
+local VPhysicsIsValid = FindMetaTable( 'PhysObj' ).IsValid
+
+--
+-- Globals
+--
+local EntitiesIterator = ents.Iterator
+
+local substrof	= string.sub
+local tinsert	= table.insert
+
+
+--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+	Cache for physics objects
+–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+local PhysCache = {}
+
+local PHYSCACHE_SKIP = {
 
 	prop_door_rotating = true;
 	prop_dynamic = true
 
 }
 
-
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Iterator for physics objects
+	Purpose: Iterator for physics objects
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local Cache = nil
+local subsequent = ipairs( {} )
 
 function physcrashguard.Iterator()
 
-	if Cache == nil then
+	if ( PhysCache == nil ) then
 
-		Cache = {}
+		PhysCache = {}
 
-		for num, ent in ipairs( ents.GetAll() ) do
+		for _, pEntity in EntitiesIterator() do
 
-			local strClass = ent:GetClass()
+			local strClass = GetClass( pEntity )
 
-			if ITER_PROHIBITED[ strClass ] or string.sub( strClass, 1, 5 ) == 'func_' then
+			if ( PHYSCACHE_SKIP[strClass] or substrof( strClass, 1, 5 ) == 'func_' ) then
 				continue
 			end
 
-			if ent:IsVehicle() or ent:IsPlayer() or ent:IsWorld() or ent:IsNPC() then
+			if ( IsVehicle( pEntity ) or IsPlayer( pEntity ) or IsWorld( pEntity ) or IsNPC( pEntity ) ) then
 				continue
 			end
 
-			local pObj = ent:GetPhysicsObject()
+			local numPhysObjs = GetPhysicsObjectCount( pEntity )
 
-			if pObj:IsValid() then
-				table.insert( Cache, pObj )
+			for numObj = 1, numPhysObjs do
+
+				local pPhysObj = GetPhysicsObjectNum( pEntity, numObj - 1 )
+
+				if ( VPhysicsIsValid( pPhysObj ) ) then
+					tinsert( PhysCache, pPhysObj )
+				end
+
 			end
 
 		end
 
 	end
 
-	return iter, Cache, 0
+	return subsequent, PhysCache, 0
 
 end
 
-local function InvalidateCache()
+--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+	Purpose: Set the cache up for update
+–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+function physcrashguard.InvalidatePhysCache()
 
-	Cache = nil
+	PhysCache = nil
 
 end
 
-hook.Add( 'OnEntityCreated', 'physcrashguard.Iterator', InvalidateCache )
-hook.Add( 'EntityRemoved',	 'physcrashguard.Iterator', InvalidateCache )
+
+local InvalidatePhysCache = physcrashguard.InvalidatePhysCache
+
+hook.Add( 'OnEntityCreated', 'PhysicsCrashGuard_Iterator', function()
+
+	InvalidatePhysCache()
+
+end )
+
+hook.Add( 'EntityRemoved', 'PhysicsCrashGuard_Iterator', function( pEntity, bFullUpdate )
+
+	if ( bFullUpdate ) then
+		return
+	end
+
+	InvalidatePhysCache()
+
+end )
