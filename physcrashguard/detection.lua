@@ -9,18 +9,19 @@
 	Prepare
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 --
--- Metamethods: Entity, PhysObj
+-- Metamethods: Entity; PhysObj
 --
-local GetEntityTable	= FindMetaTable( 'Entity' ).GetTable
-local IsRagdoll			= FindMetaTable( 'Entity' ).IsRagdoll
+local GetEntityTable = FindMetaTable( 'Entity' ).GetTable
+local IsRagdoll = FindMetaTable( 'Entity' ).IsRagdoll
 
-
-local VPhysicsGetEntity		= FindMetaTable( 'PhysObj' ).GetEntity
-local VPhysicsIsPenetrating	= FindMetaTable( 'PhysObj' ).IsPenetrating
+local VPhysicsGetEntity = FindMetaTable( 'PhysObj' ).GetEntity
+local VPhysicsIsPenetrating = FindMetaTable( 'PhysObj' ).IsPenetrating
 
 --
 -- Globals
 --
+local physcrashguard = physcrashguard
+
 local IsThereHang		= physcrashguard.IsThereHang
 local PhysIterator		= physcrashguard.Iterator
 local Resolve			= physcrashguard.Resolve
@@ -61,11 +62,8 @@ function physcrashguard.DetectHang()
 
 end
 
-
-local DetectHang = physcrashguard.DetectHang
-
 hook.Add( 'Think', 'PhysicsCrashGuard_DetectHang', function()
 
-	DetectHang()
+	physcrashguard.DetectHang()
 
 end )

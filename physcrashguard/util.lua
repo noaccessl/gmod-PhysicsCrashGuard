@@ -1,6 +1,6 @@
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
-	Iterator for all non-static physics objects that may potentially collide
+	Utilities
 
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 
@@ -9,118 +9,56 @@
 	Prepare
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 --
--- Metamethods: Entity; PhysObj
+-- Shared Functions
 --
-local EntityMeta = FindMetaTable( 'Entity' )
-
-local GetClass = EntityMeta.GetClass
-
-local IsWorld = EntityMeta.IsWorld
-
-local GetPhysicsObjectCount = EntityMeta.GetPhysicsObjectCount
-local GetPhysicsObjectNum = EntityMeta.GetPhysicsObjectNum
-
-local VPhysicsIsValid = FindMetaTable( 'PhysObj' ).IsValid
-
---
--- Functions
---
-local EntitiesIterator = ents.Iterator
-
-local substrof = string.sub
-local tableinsert = table.insert
-
---
--- Globals
---
-local physcrashguard = physcrashguard
+local getmetatable = getmetatable
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Cache for physics objects
+	Init
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local PhysCache = {}
-
-local PHYSCACHE_SKIP = {
-
-	prop_door_rotating = true;
-	prop_dynamic = true
-
-}
+physcrashguard.util = physcrashguard.util or {}
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Iterator for physics objects
+	Purpose: Optimized entity-check
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local subsequent = ipairs( {} )
+local g_EntityMeta = FindMetaTable( 'Entity' )
 
-function physcrashguard.Iterator()
+function physcrashguard.util.IsEntity( any )
 
-	if ( PhysCache == nil ) then
-
-		PhysCache = {}
-
-		for _, pEntity in EntitiesIterator() do
-
-			local strClass = GetClass( pEntity )
-
-			if ( PHYSCACHE_SKIP[strClass] or substrof( strClass, 1, 5 ) == 'func_' ) then
-				continue
-			end
-
-			if ( physcrashguard.util.IsPlayer( pEntity ) or physcrashguard.util.IsNPC( pEntity ) or physcrashguard.util.IsVehicle( pEntity ) or IsWorld( pEntity ) ) then
-				continue
-			end
-
-			local numPhysObjs = GetPhysicsObjectCount( pEntity )
-
-			for numObj = 1, numPhysObjs do
-
-				local pPhysObj = GetPhysicsObjectNum( pEntity, numObj - 1 )
-
-				if ( VPhysicsIsValid( pPhysObj ) ) then
-					tableinsert( PhysCache, pPhysObj )
-				end
-
-			end
-
-		end
-
-	end
-
-	return subsequent, PhysCache, 0
+	return getmetatable( any ) == g_EntityMeta
 
 end
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Sets the cache up for update
+	Purpose: Optimized vehicle-check
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-function physcrashguard.InvalidatePhysCache()
+local g_VehicleMeta = FindMetaTable( 'Vehicle' )
 
-	PhysCache = nil
+function physcrashguard.util.IsVehicle( any )
+
+	return getmetatable( any ) == g_VehicleMeta
 
 end
 
---
--- Set in use
---
-hook.Add( 'OnEntityCreated', 'PhysicsCrashGuard_Iterator', function( pEntity )
+--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+	Purpose: Optimized player-check
+–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+local g_PlayerMeta = FindMetaTable( 'Player' )
 
-	timer.Simple( 0, function()
+function physcrashguard.util.IsPlayer( any )
 
-		if ( pEntity:IsValid() ) then
-			physcrashguard.InvalidatePhysCache()
-		end
+	return getmetatable( any ) == g_PlayerMeta
 
-	end )
+end
 
-end )
+--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+	Purpose: Optimized npc-check
+–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+local g_NPCMeta = FindMetaTable( 'NPC' )
 
-hook.Add( 'EntityRemoved', 'PhysicsCrashGuard_Iterator', function( pEntity, bFullUpdate )
+function physcrashguard.util.IsNPC( any )
 
-	if ( bFullUpdate ) then
-		return
-	end
+	return getmetatable( any ) == g_NPCMeta
 
-	physcrashguard.InvalidatePhysCache()
-
-end )
+end

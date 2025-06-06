@@ -1,3 +1,4 @@
+
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Add some settings to the Spawn Menu
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
@@ -15,7 +16,10 @@ local function SetupSettings( Page )
 	Page:ControlHelp( 'What delay in physics simulation will be considered as a physics hang' )
 
 	Page:AddControl( 'CheckBox', { Label = 'Delete on resolve'; Command = 'physcrashguard_delete' } )
-	Page:ControlHelp( 'Experimental. Should we delete problematic entities? Won\'t apply to ragdolls.' )
+	Page:ControlHelp( 'Experimental. Should entities to resolve be deleted? Won\'t apply to ragdolls.' )
+
+	Page:AddControl( 'CheckBox', { Label = 'Freeze dupes on paste'; Command = 'physcrashguard_freezedupesonpaste' } )
+	Page:ControlHelp( 'Should dupes be freezed on paste?' )
 
 end
 

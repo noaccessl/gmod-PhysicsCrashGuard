@@ -9,28 +9,27 @@
 	Prepare
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 --
--- Metamethods: Entity, PhysObj
+-- Metamethods: Entity; PhysObj
 --
-local ENTITY = FindMetaTable( 'Entity' )
+local EntityMeta = FindMetaTable( 'Entity' )
 
-local GetColor4Part = ENTITY.GetColor4Part
-local SetColor4Part = ENTITY.SetColor4Part
+local GetColor4Part = EntityMeta.GetColor4Part
+local SetColor4Part = EntityMeta.SetColor4Part
 
-local GetRenderMode = ENTITY.GetRenderMode
-local SetRenderMode = ENTITY.SetRenderMode
+local GetRenderMode = EntityMeta.GetRenderMode
+local SetRenderMode = EntityMeta.SetRenderMode
 
-local GetCollisionGroup = ENTITY.GetCollisionGroup
-local SetCollisionGroup = ENTITY.SetCollisionGroup
+local GetCollisionGroup = EntityMeta.GetCollisionGroup
+local SetCollisionGroup = EntityMeta.SetCollisionGroup
 
-local SetDrawShadow = ENTITY.DrawShadow
+local SetDrawShadow = EntityMeta.DrawShadow
 
-local Remove = ENTITY.Remove
-
+local Remove = EntityMeta.Remove
 
 local VPhysicsEnableMotion = FindMetaTable( 'PhysObj' ).EnableMotion
 
 --
--- Enums
+-- Globals
 --
 local RENDERMODE_TRANSCOLOR = RENDERMODE_TRANSCOLOR
 local COLLISION_GROUP_WORLD = COLLISION_GROUP_WORLD
@@ -39,20 +38,32 @@ local COLLISION_GROUP_WORLD = COLLISION_GROUP_WORLD
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Deletion mode
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local DELETE_ON_RESOLVE = CreateConVar( 'physcrashguard_delete', '0', FCVAR_ARCHIVE, 'Experimental. Should we delete problematic entities? Won\'t apply to ragdolls.' ):GetBool()
+local physcrashguard_delete = CreateConVar(
 
-cvars.AddChangeCallback( 'physcrashguard_delete', function( _, _, new )
+	'physcrashguard_delete',
+	'0',
 
-	DELETE_ON_RESOLVE = tobool( new )
+	FCVAR_ARCHIVE,
 
-end, 'CacheValue' )
+	'Experimental. Should entities to resolve be deleted? Won\'t apply to ragdolls.',
+	0, 1
+
+)
+
+local g_bDeleteOnResolve = physcrashguard_delete:GetBool()
+
+cvars.AddChangeCallback( 'physcrashguard_delete', function( _, _, value )
+
+	g_bDeleteOnResolve = tobool( value )
+
+end, 'Main' )
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Resolve
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 function physcrashguard.Resolve( pPhysObj, pEntity, pEntity_t )
 
-	if ( DELETE_ON_RESOLVE ) then
+	if ( g_bDeleteOnResolve ) then
 
 		Remove( pEntity )
 		return
@@ -91,19 +102,18 @@ function physcrashguard.ResolveRagdoll( pPhysPart, pRagdoll, pEntity_t )
 
 	if ( pEntity_t.m_PhysHang ) then
 
-		local Parts_t = pEntity_t.m_PhysHang.m_tParts
+		local physparts = pEntity_t.m_PhysHang.m_PhysParts
 
-		if ( not Parts_t[pPhysPart] ) then
+		if ( not physparts[pPhysPart] ) then
 
 			VPhysicsEnableMotion( pPhysPart, false )
 
-			local index = Parts_t[0]
-			index = index + 1
+			local index = physparts[0] + 1
 
-			Parts_t[index] = pPhysPart
-			Parts_t[pPhysPart] = true
+			physparts[index] = pPhysPart
+			physparts[pPhysPart] = true
 
-			Parts_t[0] = index
+			physparts[0] = index
 
 		end
 
@@ -119,7 +129,7 @@ function physcrashguard.ResolveRagdoll( pPhysPart, pRagdoll, pEntity_t )
 		m_iLastRenderMode = GetRenderMode( pRagdoll );
 		m_iLastCollisionGroup = GetCollisionGroup( pRagdoll );
 
-		m_tParts = {
+		m_PhysParts = {
 
 			[0] = 1;
 

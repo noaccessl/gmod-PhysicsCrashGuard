@@ -19,19 +19,18 @@ local DELAY = 0.03
 	Prepare
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 --
--- Metatables: Entity, PhysObj, Player
+-- Metatables: Entity; PhysObj, Player
 --
-local ENTITY = FindMetaTable( 'Entity' )
+local EntityMeta = FindMetaTable( 'Entity' )
 
-local IsUnfreezable = ENTITY.GetUnFreezable
+local IsUnfreezable = EntityMeta.GetUnFreezable
 
-local GetPhysicsObjectCount = ENTITY.GetPhysicsObjectCount
-local GetPhysicsObjectNum	= ENTITY.GetPhysicsObjectNum
+local GetPhysicsObjectCount = EntityMeta.GetPhysicsObjectCount
+local GetPhysicsObjectNum = EntityMeta.GetPhysicsObjectNum
 
-local GetEntityTable = ENTITY.GetTable
+local GetEntityTable = EntityMeta.GetTable
 
-local IsValidEntity = ENTITY.IsValid
-
+local IsValidEntity = EntityMeta.IsValid
 
 local PhysObj = FindMetaTable( 'PhysObj' )
 
@@ -42,48 +41,26 @@ local VPhysicsSleep			= PhysObj.Sleep
 local VPhysicsWake			= PhysObj.Wake
 local VPhysicsGetEntity		= PhysObj.GetEntity
 
+local GetAimTrace = FindMetaTable( 'Player' ).GetEyeTrace
+local HasPlayerReleasedKey = FindMetaTable( 'Player' ).KeyReleased
 
-local GetAimTrace			= FindMetaTable( 'Player' ).GetEyeTrace
-local HasPlayerReleasedKey	= FindMetaTable( 'Player' ).KeyReleased
+--
+-- Functions
+--
+local subsequent = ipairs( {} )
+
+local GetCurTime = CurTime
+
+local GamemodeCall = gamemode.Call
 
 --
 -- Globals, Utilities
 --
 local net = net
 
-local subsequent = ipairs( {} )
-
-local GamemodeCall do
-
-	local CurrentGM = gmod.GetGamemode()
-
-	hook.Add( 'CreateTeams', 'WriteCurrentGM', function()
-
-		hook.Remove( 'CreateTeams', 'WriteCurrentGM' )
-		CurrentGM = gmod.GetGamemode()
-
-	end )
-
-
-	local CallHook = hook.Call
-
-	function GamemodeCall( event, ... )
-
-		if ( not CurrentGM[event] ) then
-			return false
-		end
-
-		return CallHook( event, CurrentGM, ... )
-
-	end
-
-end
-
-local GetCurTime = CurTime
-
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Unfreezing enums
+	Unfreezing enums
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local UNFREEZE_START = 0
 local UNFREEZE_ABORT = 1
@@ -102,10 +79,10 @@ local GetAllConstrainedEntitiesSequentially = physcrashguard.GetAllConstrainedEn
 
 local function CollectUnfreezable( pl, pLookupEntity )
 
-	local Unfreezing_t = { [0] = 0 }
-	local ConstrainedEntities_t = GetAllConstrainedEntitiesSequentially( pLookupEntity )
+	local tblUnfreezing = { [0] = 0 }
+	local tblConstrainedEntities = GetAllConstrainedEntitiesSequentially( pLookupEntity )
 
-	for _, pEntity in subsequent, ConstrainedEntities_t, 0 do
+	for _, pEntity in subsequent, tblConstrainedEntities, 0 do
 
 		if ( IsUnfreezable( pEntity ) ) then
 			continue
@@ -125,17 +102,17 @@ local function CollectUnfreezable( pl, pLookupEntity )
 				continue
 			end
 
-			local index = Unfreezing_t[0]
+			local index = tblUnfreezing[0]
 			index = index + 1
 
-			Unfreezing_t[index] = pPhysObj
-			Unfreezing_t[0] = index
+			tblUnfreezing[index] = pPhysObj
+			tblUnfreezing[0] = index
 
 		end
 
 	end
 
-	return Unfreezing_t
+	return tblUnfreezing
 
 end
 
@@ -156,15 +133,15 @@ function physcrashguard.StartGradualUnfreezing( pl )
 
 		local pl_t = GetEntityTable( pl )
 
-		local PhysObjs_t = CollectUnfreezable( pl, pFacingEntity )
+		local tblPhysObjs = CollectUnfreezable( pl, pFacingEntity )
 
-		if ( PhysObjs_t[0] == 0 ) then
+		if ( tblPhysObjs[0] == 0 ) then
 			return
 		end
 
 		pl_t.m_Unfreezing = {
 
-			m_tPhysObjs = PhysObjs_t;
+			m_tPhysObjs = tblPhysObjs;
 			m_iNextTime = GetCurTime() + DELAY;
 			m_iCurrent = 1
 
@@ -214,7 +191,7 @@ function physcrashguard.ProcessGradualUnfreezing( pl )
 
 	local flCurTime = GetCurTime()
 
-	local PhysObjs_t = Unfreezing.m_tPhysObjs
+	local tblPhysObjs = Unfreezing.m_tPhysObjs
 
 	--
 	-- Abort the process
@@ -224,7 +201,7 @@ function physcrashguard.ProcessGradualUnfreezing( pl )
 		--
 		-- Freeze back the objects
 		--
-		for i, pPhysObj in subsequent, PhysObjs_t, 0 do
+		for i, pPhysObj in subsequent, tblPhysObjs, 0 do
 
 			if ( VPhysicsIsValid( pPhysObj ) and VPhysicsIsMoveable( pPhysObj ) ) then
 
@@ -245,7 +222,7 @@ function physcrashguard.ProcessGradualUnfreezing( pl )
 
 	end
 
-	local iTotal = PhysObjs_t[0]
+	local iTotal = tblPhysObjs[0]
 	local iCurrent = Unfreezing.m_iCurrent
 
 	--
@@ -271,7 +248,7 @@ function physcrashguard.ProcessGradualUnfreezing( pl )
 
 	if ( iNextTime < flCurTime ) then
 
-		local pPhysObj = PhysObjs_t[iCurrent]
+		local pPhysObj = tblPhysObjs[iCurrent]
 
 		--
 		-- Terminate the process if one of the entities was removed
@@ -290,14 +267,14 @@ function physcrashguard.ProcessGradualUnfreezing( pl )
 
 		local pEntity = VPhysicsGetEntity( pPhysObj )
 
-			if ( GetEntityTable( pEntity ).m_PhysHang ) then
-				TryToRestore( pEntity )
-			else
+		if ( GetEntityTable( pEntity ).m_PhysHang ) then
+			TryToRestore( pEntity )
+		else
 
-				VPhysicsEnableMotion( pPhysObj, true )
-				VPhysicsWake( pPhysObj )
+			VPhysicsEnableMotion( pPhysObj, true )
+			VPhysicsWake( pPhysObj )
 
-			end
+		end
 
 		Unfreezing.m_iCurrent = iCurrent + 1
 		Unfreezing.m_iNextTime = flCurTime + DELAY
@@ -312,7 +289,9 @@ function physcrashguard.ProcessGradualUnfreezing( pl )
 
 end
 
-
+--
+-- Set in use
+--
 local ProcessGradualUnfreezing = physcrashguard.ProcessGradualUnfreezing
 
 hook.Add( 'PlayerPostThink', 'PhysicsCrashGuard_GradualUnfreezing', function( pl )

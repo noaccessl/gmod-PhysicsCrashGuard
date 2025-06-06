@@ -1,74 +1,107 @@
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
-	Physics Crash Guard
+	A submodule responsible for freezing dupes on creation
 
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Init
+	Prepare
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-physcrashguard = physcrashguard or {}
+--
+-- Metamethods: Entity; PhysObj
+--
+local EntityMeta = FindMetaTable( 'Entity' )
+
+local IsRagdoll				= EntityMeta.IsRagdoll
+local GetPhysicsObject		= EntityMeta.GetPhysicsObject
+local GetPhysicsObjectCount	= EntityMeta.GetPhysicsObjectCount
+local GetPhysicsObjectNum	= EntityMeta.GetPhysicsObjectNum
+
+local PhysObjMeta = FindMetaTable( 'PhysObj' )
+
+local VPhysicsIsValid		= PhysObjMeta.IsValid
+local VPhysicsEnableMotion	= PhysObjMeta.EnableMotion
+local VPhysicsSleep			= PhysObjMeta.Sleep
+
+--
+-- Functions
+--
+local subsequent = ipairs( {} )
+
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Hang detection
+	A setting
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local physcrashguard_hangdetection = CreateConVar(
+local physcrashguard_freezedupesonpaste = CreateConVar(
 
-	'physcrashguard_hangdetection',
-	'14',
+	'physcrashguard_freezedupesonpaste',
+	'1',
 
-	SERVER and FCVAR_ARCHIVE or FCVAR_NONE,
+	FCVAR_ARCHIVE,
 
-	'What delay (ms) in physics simulation will be considered as a physics hang',
-	0, 2000
+	'Should dupes be freezed on paste?',
+	0, 1
 
 )
 
-local g_flHangDetection = physcrashguard_hangdetection:GetFloat()
+local g_bFreezeDupesOnPaste = physcrashguard_freezedupesonpaste:GetBool()
 
 cvars.AddChangeCallback( 'physcrashguard_hangdetection', function( _, _, value )
 
-	g_flHangDetection = ( tonumber( value ) or 14 ) / 1000
+	g_bFreezeDupesOnPaste = tobool( value )
 
 end, 'Main' )
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Checks for physics hang
+	Purpose: Catch & freeze just pasted dupes
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local PhysEnvGetLastSimulationTime = physenv.GetLastSimulationTime
+local function FreezeEntities( listEntites )
 
-function physcrashguard.IsThereHang()
+	for _, pEntity in subsequent, listEntites, 0 do
 
-	return PhysEnvGetLastSimulationTime() > g_flHangDetection
+		if ( IsRagdoll( pEntity ) ) then
+
+			for numObj = 0, GetPhysicsObjectCount( pEntity ) - 1 do
+
+				local pPhysObj = GetPhysicsObjectNum( pEntity, numObj )
+
+				if ( VPhysicsIsValid( pPhysObj ) ) then
+
+					VPhysicsEnableMotion( pPhysObj, false )
+					VPhysicsSleep( pPhysObj )
+
+				end
+
+			end
+
+		else
+
+			local pPhysObj = GetPhysicsObject( pEntity )
+
+			if ( VPhysicsIsValid( pPhysObj ) ) then
+
+				VPhysicsEnableMotion( pPhysObj, false )
+				VPhysicsSleep( pPhysObj )
+
+			end
+
+		end
+
+	end
 
 end
 
---[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Assemble the addon
-–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-if ( SERVER ) then
+hook.Add( 'CanCreateUndo', 'PhysicsCrashGuard_FreezeDupesOnPaste', function( pl, tblUndo )
 
-	include( 'util.lua' )
+	if ( tblUndo.Name ~= 'Duplicator' ) then
+		return
+	end
 
-	include( 'iterator.lua' )
+	if ( not g_bFreezeDupesOnPaste ) then
+		return
+	end
 
-	include( 'resolving.lua' )
-	include( 'detection.lua' )
-	include( 'restoring.lua' )
+	FreezeEntities( tblUndo.Entities )
 
-	include( 'constraints.lua' )
-
-	include( 'gradualunfreezing.lua' )
-
-	include( 'freezedupesonpaste.lua' )
-
-	AddCSLuaFile( 'client/gradualunfreezing.lua' )
-	AddCSLuaFile( 'client/settings.lua' )
-
-elseif ( CLIENT ) then
-
-	include( 'client/gradualunfreezing.lua' )
-	include( 'client/settings.lua' )
-
-end
+end )

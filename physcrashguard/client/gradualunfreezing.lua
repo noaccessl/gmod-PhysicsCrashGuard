@@ -6,7 +6,16 @@
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Unfreezing enums
+	Prepare
+–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+--
+-- Globals
+--
+local physcrashguard = physcrashguard
+
+
+--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+	Unfreezing enums
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local UNFREEZE_START = 0
 local UNFREEZE_ABORT = 1
@@ -14,9 +23,9 @@ local UNFREEZE_PROGRESS = 2
 local UNFREEZE_DONE = 3
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Store unfreezing data
+	Unfreezing data
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-physcrashguard.Unfreezing = physcrashguard.Unfreezing or {
+physcrashguard.m_Unfreezing = physcrashguard.m_Unfreezing or {
 
 	Status = 0;
 	Entities = {}
@@ -33,17 +42,17 @@ do
 	IUnfreezingQueue.__tostring = function( self ) return Format( 'IUnfreezingQueue: %p', self ) end
 
 	-- Get the status
-	function IUnfreezingQueue:GetStatus() return physcrashguard.Unfreezing.Status end
+	function IUnfreezingQueue:GetStatus() return physcrashguard.m_Unfreezing.Status end
 
 	-- Get all entities
-	function IUnfreezingQueue:GetAll() return physcrashguard.Unfreezing.Entities end
+	function IUnfreezingQueue:GetAll() return physcrashguard.m_Unfreezing.Entities end
 
 	--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 		SetStatus
 	–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 	function IUnfreezingQueue:SetStatus( iStatus )
 
-		physcrashguard.Unfreezing.Status = iStatus
+		physcrashguard.m_Unfreezing.Status = iStatus
 
 	end
 
@@ -126,7 +135,7 @@ do
 	–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 	function IUnfreezingQueue:Add( pEntity )
 
-		return table.insert( physcrashguard.Unfreezing.Entities, pEntity )
+		return table.insert( physcrashguard.m_Unfreezing.Entities, pEntity )
 
 	end
 
@@ -135,23 +144,27 @@ do
 	–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 	function IUnfreezingQueue:Clear()
 
-		table.Empty( physcrashguard.Unfreezing.Entities )
+		table.Empty( physcrashguard.m_Unfreezing.Entities )
 
 	end
 
 end
 
-physcrashguard.UnfreezingQueue = physcrashguard.UnfreezingQueue or newproxy( true )
-debug.setmetatable( physcrashguard.UnfreezingQueue, IUnfreezingQueue )
+if ( not physcrashguard.UnfreezingQueue ) then
+
+	physcrashguard.UnfreezingQueue = newproxy()
+	debug.setmetatable( physcrashguard.UnfreezingQueue, IUnfreezingQueue )
+
+end
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Display the process
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local COLOR_UNFREEZING = Color( 76, 255, 255 )
-local COLOR_ABORT = Color( 255 - COLOR_UNFREEZING.r, 255 - COLOR_UNFREEZING.g, 255 - COLOR_UNFREEZING.b ) -- Let's have inverted color
+local g_colUnfreezing = Color( 76, 255, 255 )
+local g_colAbort = Color( 255 - g_colUnfreezing.r, 255 - g_colUnfreezing.g, 255 - g_colUnfreezing.b ) -- Let's have inverted color
 
-local COLOR_DISPLAY = COLOR_UNFREEZING
+local g_colDisplaying = g_colUnfreezing
 
 hook.Add( 'PreDrawHalos', 'PhysicsCrashGuard_GradualUnfreezing', function()
 
@@ -164,12 +177,12 @@ hook.Add( 'PreDrawHalos', 'PhysicsCrashGuard_GradualUnfreezing', function()
 	local iStatus = physcrashguard.UnfreezingQueue:GetStatus()
 
 	if ( iStatus == UNFREEZE_ABORT ) then
-		COLOR_DISPLAY = COLOR_ABORT
+		g_colDisplaying = g_colAbort
 	else
-		COLOR_DISPLAY = COLOR_UNFREEZING
+		g_colDisplaying = g_colUnfreezing
 	end
 
-	halo.Add( UnfreezingEntities, COLOR_DISPLAY, 2, 2, 1, true, true )
+	halo.Add( UnfreezingEntities, g_colDisplaying, 2, 2, 1, true, true )
 
 end )
 
@@ -202,17 +215,15 @@ net.Receive( 'physcrashguard.Unfreeze', function()
 
 	end
 
-	--
 	-- Update colors
-	--
 	local cl_weaponcolor = GetConVar( 'cl_weaponcolor' )
 
 	if ( cl_weaponcolor ) then
-		COLOR_UNFREEZING = Vector( cl_weaponcolor:GetString() ):ToColor()
+		g_colUnfreezing = Vector( cl_weaponcolor:GetString() ):ToColor()
 	else
-		COLOR_UNFREEZING = Color( 76, 255, 255 )
+		g_colUnfreezing = Color( 76, 255, 255 )
 	end
 
-	COLOR_ABORT = Color( 255 - COLOR_UNFREEZING.r, 255 - COLOR_UNFREEZING.g, 255 - COLOR_UNFREEZING.b )
+	g_colAbort = Color( 255 - g_colUnfreezing.r, 255 - g_colUnfreezing.g, 255 - g_colUnfreezing.b )
 
 end )

@@ -11,43 +11,34 @@
 --
 -- Metatables
 --
-local ENTITY = FindMetaTable( 'Entity' )
+local EntityMeta = FindMetaTable( 'Entity' )
 
 --
 -- Metamethods: Entity
 --
-local GetEntityTable	= ENTITY.GetTable
-local IsValidEntity		= ENTITY.IsValid
-local IsWorld			= ENTITY.IsWorld
+local GetEntityTable = EntityMeta.GetTable
+local IsEntityValid	 = EntityMeta.IsValid
+local IsWorld		 = EntityMeta.IsWorld
 
 --
--- Globals, Utilities
+-- Functions
 --
-local subsequent	= ipairs( {} )
-local next			= pairs( {} )
+local subsequent = ipairs( {} )
+local next = pairs( {} )
 
-
-local fast_isentity do
-
-	local getmetatable	= getmetatable
-	local ENTITY		= ENTITY
-
-	function fast_isentity( any )
-
-		return getmetatable( any ) == ENTITY
-
-	end
-
-end
+--
+-- Globals
+--
+local physcrashguard = physcrashguard
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Fix for sliders by limiting the distance between two connected objects using rope
+	Purpose: Fixes sliders by limiting the distance between two connected objects using rope
 
-	Note #1:
+	Note:
 		Sliders will crash the game if:
-		1. Two connected objects are too far away.
-		2. They are bitching too much. (Consequence from the first point.)
+		 1. Two connected objects are too far away.
+		 2. They are bitching too much. (Consequence from the first point.)
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local MAX_DISTANCE = 6656
 
@@ -62,7 +53,16 @@ hook.Add( 'OnEntityCreated', 'PhysicsCrashGuard_FixSliders', function( pEntity )
 		if ( pEntity:GetClass() == 'phys_slideconstraint' ) then
 
 			local Ent1 = pEntity.Ent1
+
+			if ( not IsValid( Ent1 ) ) then
+				return
+			end
+
 			local Ent2 = pEntity.Ent2
+
+			if ( not IsValid( Ent2 ) ) then
+				return
+			end
 
 			local vecPos1 = Ent1:GetPos()
 			local vecPos2 = Ent2:GetPos()
@@ -104,23 +104,23 @@ end )
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 function physcrashguard.HasConstraints( pEntity )
 
-	if ( not fast_isentity( pEntity ) ) then
+	if ( not physcrashguard.util.IsEntity( pEntity ) ) then
 		return false
 	end
 
 	local pEntity_t = GetEntityTable( pEntity )
-	local Constraints_t = pEntity_t.Constraints
+	local constraints = pEntity_t.Constraints
 
-	if ( not Constraints_t ) then
+	if ( not constraints ) then
 		return false
 	end
 
 	local bHas = false
 
-	for index, pConstraint in next, Constraints_t do
+	for index, pConstraint in next, constraints do
 
-		if ( not IsValidEntity( pConstraint ) ) then
-			Constraints_t[index] = nil
+		if ( not IsEntityValid( pConstraint ) ) then
+			constraints[index] = nil
 		else
 			bHas = true
 		end
@@ -142,22 +142,20 @@ function physcrashguard.GetConstraintsData( pEntity )
 		return false
 	end
 
-	local ConstraintsData_t = { [0] = 0 }
+	local constraintsdata = { [0] = 0 }
 
 	for _, pConstraint in next, GetEntityTable( pEntity ).Constraints do
 
 		local pConstraint_t = GetEntityTable( pConstraint )
 
-		local index = ConstraintsData_t[0]
-		index = index + 1
-
-		ConstraintsData_t[index] = pConstraint_t
-		ConstraintsData_t[0] = index
+		local index = constraintsdata[0] + 1
+		constraintsdata[index] = pConstraint_t
+		constraintsdata[0] = index
 
 	end
 
-	ConstraintsData_t[0] = nil
-	return ConstraintsData_t
+	constraintsdata[0] = nil
+	return constraintsdata
 
 end
 
@@ -171,7 +169,7 @@ local function GetAllConstrainedEntitiesSequentially( pEntity, output, map )
 	output = output or { [0] = 0 }
 	map = map or {}
 
-	if ( not IsValidEntity( pEntity ) ) then
+	if ( not IsEntityValid( pEntity ) ) then
 		return
 	end
 
@@ -191,9 +189,9 @@ local function GetAllConstrainedEntitiesSequentially( pEntity, output, map )
 
 	if ( ret ~= false ) then
 
-		local ConstraintsData_t = ret
+		local constraintsdata = ret
 
-		for _, pConstraint_t in subsequent, ConstraintsData_t, 0 do
+		for _, pConstraint_t in subsequent, constraintsdata, 0 do
 
 			for i = 1, 2 do
 
