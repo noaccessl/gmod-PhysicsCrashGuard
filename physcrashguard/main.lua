@@ -11,40 +11,6 @@
 physcrashguard = physcrashguard or {}
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Hang detection
-–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local physcrashguard_hangdetection = CreateConVar(
-
-	'physcrashguard_hangdetection',
-	'14',
-
-	SERVER and FCVAR_ARCHIVE or FCVAR_NONE,
-
-	'What delay (ms) in physics simulation will be considered as a physics hang',
-	0, 2000
-
-)
-
-local g_flHangDetection = physcrashguard_hangdetection:GetFloat()
-
-cvars.AddChangeCallback( 'physcrashguard_hangdetection', function( _, _, value )
-
-	g_flHangDetection = ( tonumber( value ) or 14 ) / 1000
-
-end, 'Main' )
-
---[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Checks for physics hang
-–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local PhysEnvGetLastSimulationTime = physenv.GetLastSimulationTime
-
-function physcrashguard.IsThereHang()
-
-	return PhysEnvGetLastSimulationTime() > g_flHangDetection
-
-end
-
---[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Assemble the addon
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 if ( SERVER ) then
