@@ -9,7 +9,7 @@
 	Prepare
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 --
--- Metamethods: Entity; PhysObj
+-- Metamethods
 --
 local EntityMeta = FindMetaTable( 'Entity' )
 
@@ -26,10 +26,8 @@ local SetDrawShadow = EntityMeta.DrawShadow
 
 local Remove = EntityMeta.Remove
 
-local VPhysicsEnableMotion = FindMetaTable( 'PhysObj' ).EnableMotion
-
 --
--- Globals
+-- Enums
 --
 local RENDERMODE_TRANSCOLOR = RENDERMODE_TRANSCOLOR
 local COLLISION_GROUP_WORLD = COLLISION_GROUP_WORLD
@@ -61,7 +59,7 @@ end, 'Main' )
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Resolve
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-function physcrashguard.Resolve( pPhysObj, pEntity, pEntity_t )
+function PhysicsCrashGuard.Resolve( pPhysObj, pEntity, entity_t )
 
 	if ( g_bDeleteOnResolve ) then
 
@@ -70,21 +68,21 @@ function physcrashguard.Resolve( pPhysObj, pEntity, pEntity_t )
 
 	end
 
-	if ( pEntity_t.m_PhysHang ) then
+	if ( entity_t.m_PhysHang ) then
 		return
 	end
 
 	local r, g, b, a = GetColor4Part( pEntity )
 
-	pEntity_t.m_PhysHang = {
+	entity_t.m_PhysHang = {
 
-		m_colLast = { r; g; b; a };
-		m_iLastRenderMode = GetRenderMode( pEntity );
-		m_iLastCollisionGroup = GetCollisionGroup( pEntity )
+		colEntityLast = { r; g; b; a };
+		iEntityLastRenderMode = GetRenderMode( pEntity );
+		iEntityLastCollisionGroup = GetCollisionGroup( pEntity )
 
 	}
 
-	VPhysicsEnableMotion( pPhysObj, false )
+	pPhysObj:EnableMotion( false )
 
 	SetDrawShadow( pEntity, false )
 
@@ -98,15 +96,15 @@ end
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	ResolveRagdoll
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-function physcrashguard.ResolveRagdoll( pPhysPart, pRagdoll, pEntity_t )
+function PhysicsCrashGuard.ResolveRagdoll( pPhysPart, pRagdoll, entity_t )
 
-	if ( pEntity_t.m_PhysHang ) then
+	if ( entity_t.m_PhysHang ) then
 
-		local physparts = pEntity_t.m_PhysHang.m_PhysParts
+		local physparts = entity_t.m_PhysHang.m_PhysParts
 
 		if ( not physparts[pPhysPart] ) then
 
-			VPhysicsEnableMotion( pPhysPart, false )
+			pPhysPart:EnableMotion( false )
 
 			local index = physparts[0] + 1
 
@@ -123,11 +121,11 @@ function physcrashguard.ResolveRagdoll( pPhysPart, pRagdoll, pEntity_t )
 
 	local r, g, b, a = GetColor4Part( pRagdoll )
 
-	pEntity_t.m_PhysHang = {
+	entity_t.m_PhysHang = {
 
-		m_colLast = { r; g; b; a };
-		m_iLastRenderMode = GetRenderMode( pRagdoll );
-		m_iLastCollisionGroup = GetCollisionGroup( pRagdoll );
+		colEntityLast = { r; g; b; a };
+		iEntityLastRenderMode = GetRenderMode( pRagdoll );
+		iEntityLastCollisionGroup = GetCollisionGroup( pRagdoll );
 
 		m_PhysParts = {
 
@@ -140,7 +138,7 @@ function physcrashguard.ResolveRagdoll( pPhysPart, pRagdoll, pEntity_t )
 
 	}
 
-	VPhysicsEnableMotion( pPhysPart, false )
+	pPhysPart:EnableMotion( false )
 
 	SetDrawShadow( pRagdoll, false )
 

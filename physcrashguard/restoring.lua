@@ -9,24 +9,17 @@
 	Prepare
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 --
--- Metamethods: Entity; PhysObj
+-- Metamethods
 --
 local EntityMeta = FindMetaTable( 'Entity' )
 
-local SetCollisionGroup	= EntityMeta.SetCollisionGroup
-local SetDrawShadow		= EntityMeta.DrawShadow
-local SetColor4Part		= EntityMeta.SetColor4Part
-local SetRenderMode		= EntityMeta.SetRenderMode
+local SetCollisionGroup = EntityMeta.SetCollisionGroup
+local SetDrawShadow     = EntityMeta.DrawShadow
+local SetColor4Part     = EntityMeta.SetColor4Part
+local SetRenderMode     = EntityMeta.SetRenderMode
 
 local GetEntityTable = EntityMeta.GetTable
 local GetPhysicsObject = EntityMeta.GetPhysicsObject
-
-local PhysObjMeta = FindMetaTable( 'PhysObj' )
-
-local VPhysicsEnableMotion = PhysObjMeta.EnableMotion
-local VPhysicsWake = PhysObjMeta.Wake
-
-local VPhysicsIsPenetrating = PhysObjMeta.IsPenetrating
 
 --
 -- Functions
@@ -37,10 +30,10 @@ local unpack = unpack
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Restoring
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local function Restore( pEntity, pEntity_t, pPhysObj )
+local function Restore( pEntity, entity_t, pPhysObj )
 
-	local PhysHang = pEntity_t.m_PhysHang
-	local physparts = PhysHang.m_PhysParts
+	local tPhysHang = entity_t.m_PhysHang
+	local physparts = tPhysHang.m_PhysParts
 
 	if ( physparts ) then
 
@@ -48,36 +41,36 @@ local function Restore( pEntity, pEntity_t, pPhysObj )
 
 			local pPhysPart = physparts[i]
 
-			VPhysicsEnableMotion( pPhysPart, true )
-			VPhysicsWake( pPhysPart )
+			pPhysPart:EnableMotion( true )
+			pPhysPart:Wake()
 
 		end
 
 	else
 
-		VPhysicsEnableMotion( pPhysObj, true )
-		VPhysicsWake( pPhysObj )
+		pPhysObj:EnableMotion( true )
+		pPhysObj:Wake()
 
 	end
 
 	SetDrawShadow( pEntity, true )
 
-	SetColor4Part( pEntity, unpack( PhysHang.m_colLast, 1, 4 ) )
-	SetRenderMode( pEntity, PhysHang.m_iLastRenderMode )
+	SetColor4Part( pEntity, unpack( tPhysHang.colEntityLast, 1, 4 ) )
+	SetRenderMode( pEntity, tPhysHang.iEntityLastRenderMode )
 
-	SetCollisionGroup( pEntity, PhysHang.m_iLastCollisionGroup )
+	SetCollisionGroup( pEntity, tPhysHang.iEntityLastCollisionGroup )
 
-	pEntity_t.m_PhysHang = nil
+	entity_t.m_PhysHang = nil
 
 end
 
-function physcrashguard.TryToRestore( pEntity )
+function PhysicsCrashGuard.TryToRestore( pEntity )
 
-	local pEntity_t = GetEntityTable( pEntity )
+	local entity_t = GetEntityTable( pEntity )
 	local pPhysObj = GetPhysicsObject( pEntity )
 
-	if ( pEntity_t.m_PhysHang and not VPhysicsIsPenetrating( pPhysObj ) ) then
-		Restore( pEntity, pEntity_t, pPhysObj )
+	if ( entity_t.m_PhysHang and not pPhysObj:IsPenetrating() ) then
+		Restore( pEntity, entity_t, pPhysObj )
 	end
 
 end
@@ -87,18 +80,18 @@ end
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 hook.Add( 'OnPhysgunPickup', 'PhysicsCrashGuard_Restore', function( _, pEntity )
 
-	physcrashguard.TryToRestore( pEntity )
+	PhysicsCrashGuard.TryToRestore( pEntity )
 
 end )
 
 hook.Add( 'GravGunOnPickedUp', 'PhysicsCrashGuard_Restore', function( _, pEntity )
 
-	physcrashguard.TryToRestore( pEntity )
+	PhysicsCrashGuard.TryToRestore( pEntity )
 
 end )
 
 hook.Add( 'GravGunPunt', 'PhysicsCrashGuard_Restore', function( _, pEntity )
 
-	physcrashguard.TryToRestore( pEntity )
+	PhysicsCrashGuard.TryToRestore( pEntity )
 
 end )

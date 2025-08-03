@@ -1,7 +1,7 @@
 # gmod-PhysicsCrashGuard
-Effectively detects and prevents crash attempts using physics objects.
-Simple and lightweight.
+ A system that effectively detects and prevents crash attempts via physics objects.
+ Simple and lightweight.
 
-[Showcase](https://youtu.be/FBUrrf0f-Ns)
+ [Showcase](https://youtu.be/FBUrrf0f-Ns)
 
-[Workshop Page](https://steamcommunity.com/sharedfiles/filedetails/?id=3148349097)
+ [Workshop Page](https://steamcommunity.com/sharedfiles/filedetails/?id=3148349097)

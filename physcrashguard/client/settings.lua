@@ -29,7 +29,7 @@ hook.Add( 'PopulateToolMenu', 'PhysicsCrashGuard_Settings', function()
 
 		'Utilities',
 		'Admin',
-		'physcrashguard',
+		'PhysicsCrashGuard',
 		'Physics Crash Guard',
 		'',
 		'',

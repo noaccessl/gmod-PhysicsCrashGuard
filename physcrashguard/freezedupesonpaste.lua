@@ -13,16 +13,10 @@
 --
 local EntityMeta = FindMetaTable( 'Entity' )
 
-local IsRagdoll				= EntityMeta.IsRagdoll
-local GetPhysicsObject		= EntityMeta.GetPhysicsObject
-local GetPhysicsObjectCount	= EntityMeta.GetPhysicsObjectCount
-local GetPhysicsObjectNum	= EntityMeta.GetPhysicsObjectNum
-
-local PhysObjMeta = FindMetaTable( 'PhysObj' )
-
-local VPhysicsIsValid		= PhysObjMeta.IsValid
-local VPhysicsEnableMotion	= PhysObjMeta.EnableMotion
-local VPhysicsSleep			= PhysObjMeta.Sleep
+local IsRagdoll             = EntityMeta.IsRagdoll
+local GetPhysicsObject      = EntityMeta.GetPhysicsObject
+local GetPhysicsObjectCount = EntityMeta.GetPhysicsObjectCount
+local GetPhysicsObjectNum   = EntityMeta.GetPhysicsObjectNum
 
 --
 -- Functions
@@ -56,9 +50,9 @@ end, 'Main' )
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Catch & freeze just pasted dupes
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local function FreezeEntities( listEntites )
+local function FreezeEntities( listEntities )
 
-	for _, pEntity in subsequent, listEntites, 0 do
+	for _, pEntity in subsequent, listEntities, 0 do
 
 		if ( IsRagdoll( pEntity ) ) then
 
@@ -66,10 +60,10 @@ local function FreezeEntities( listEntites )
 
 				local pPhysObj = GetPhysicsObjectNum( pEntity, numObj )
 
-				if ( VPhysicsIsValid( pPhysObj ) ) then
+				if ( pPhysObj:IsValid() ) then
 
-					VPhysicsEnableMotion( pPhysObj, false )
-					VPhysicsSleep( pPhysObj )
+					pPhysObj:EnableMotion( false )
+					pPhysObj:Sleep()
 
 				end
 
@@ -79,10 +73,10 @@ local function FreezeEntities( listEntites )
 
 			local pPhysObj = GetPhysicsObject( pEntity )
 
-			if ( VPhysicsIsValid( pPhysObj ) ) then
+			if ( pPhysObj:IsValid() ) then
 
-				VPhysicsEnableMotion( pPhysObj, false )
-				VPhysicsSleep( pPhysObj )
+				pPhysObj:EnableMotion( false )
+				pPhysObj:Sleep()
 
 			end
 
@@ -98,10 +92,8 @@ hook.Add( 'CanCreateUndo', 'PhysicsCrashGuard_FreezeDupesOnPaste', function( pl,
 		return
 	end
 
-	if ( not g_bFreezeDupesOnPaste ) then
-		return
+	if ( g_bFreezeDupesOnPaste ) then
+		FreezeEntities( tblUndo.Entities )
 	end
-
-	FreezeEntities( tblUndo.Entities )
 
 end )

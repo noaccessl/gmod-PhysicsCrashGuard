@@ -9,16 +9,13 @@
 	Prepare
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 --
--- Metatables
+-- Metamethods
 --
 local EntityMeta = FindMetaTable( 'Entity' )
 
---
--- Metamethods: Entity
---
-local GetEntityTable = EntityMeta.GetTable
-local IsEntityValid	 = EntityMeta.IsValid
-local IsWorld		 = EntityMeta.IsWorld
+local GetEntityTable    = EntityMeta.GetTable
+local IsEntityValid     = EntityMeta.IsValid
+local IsWorld           = EntityMeta.IsWorld
 
 --
 -- Functions
@@ -29,7 +26,7 @@ local next = pairs( {} )
 --
 -- Globals
 --
-local physcrashguard = physcrashguard
+local PhysicsCrashGuard = PhysicsCrashGuard
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
@@ -102,25 +99,25 @@ end )
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Optimized constraint.HasConstraints
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-function physcrashguard.HasConstraints( pEntity )
+function PhysicsCrashGuard.util.HasConstraints( pEntity )
 
-	if ( not physcrashguard.util.IsEntity( pEntity ) ) then
+	if ( not PhysicsCrashGuard.util.IsEntity( pEntity ) ) then
 		return false
 	end
 
-	local pEntity_t = GetEntityTable( pEntity )
-	local constraints = pEntity_t.Constraints
+	local entity_t = GetEntityTable( pEntity )
+	local tConstraints = entity_t.Constraints
 
-	if ( not constraints ) then
+	if ( not tConstraints ) then
 		return false
 	end
 
 	local bHas = false
 
-	for index, pConstraint in next, constraints do
+	for index, pConstraint in next, tConstraints do
 
 		if ( not IsEntityValid( pConstraint ) ) then
-			constraints[index] = nil
+			tConstraints[index] = nil
 		else
 			bHas = true
 		end
@@ -134,9 +131,9 @@ end
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Optimized (and reduced) constraint.GetTable
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local HasConstraints = physcrashguard.HasConstraints
+local HasConstraints = PhysicsCrashGuard.util.HasConstraints
 
-function physcrashguard.GetConstraintsData( pEntity )
+function PhysicsCrashGuard.util.GetConstraintsData( pEntity )
 
 	if ( not HasConstraints( pEntity ) ) then
 		return false
@@ -146,10 +143,10 @@ function physcrashguard.GetConstraintsData( pEntity )
 
 	for _, pConstraint in next, GetEntityTable( pEntity ).Constraints do
 
-		local pConstraint_t = GetEntityTable( pConstraint )
+		local constraint_t = GetEntityTable( pConstraint )
 
 		local index = constraintsdata[0] + 1
-		constraintsdata[index] = pConstraint_t
+		constraintsdata[index] = constraint_t
 		constraintsdata[0] = index
 
 	end
@@ -162,7 +159,7 @@ end
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Optimized constraint.GetAllConstrainedEntities
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local GetConstraintsData = physcrashguard.GetConstraintsData
+local GetConstraintsData = PhysicsCrashGuard.util.GetConstraintsData
 
 local function GetAllConstrainedEntitiesSequentially( pEntity, output, map )
 
@@ -191,11 +188,11 @@ local function GetAllConstrainedEntitiesSequentially( pEntity, output, map )
 
 		local constraintsdata = ret
 
-		for _, pConstraint_t in subsequent, constraintsdata, 0 do
+		for _, constraint_t in subsequent, constraintsdata, 0 do
 
 			for i = 1, 2 do
 
-				local pConstrained = pConstraint_t[ 'Ent' .. i ]
+				local pConstrained = constraint_t[ 'Ent' .. i ]
 
 				if ( not IsWorld( pConstrained ) ) then
 					GetAllConstrainedEntitiesSequentially( pConstrained, output, map )
@@ -211,4 +208,4 @@ local function GetAllConstrainedEntitiesSequentially( pEntity, output, map )
 
 end
 
-physcrashguard.GetAllConstrainedEntitiesSequentially = GetAllConstrainedEntitiesSequentially
+PhysicsCrashGuard.util.GetAllConstrainedEntitiesSequentially = GetAllConstrainedEntitiesSequentially

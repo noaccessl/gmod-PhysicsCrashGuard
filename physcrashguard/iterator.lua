@@ -9,7 +9,7 @@
 	Prepare
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 --
--- Metamethods: Entity; PhysObj
+-- Metamethods
 --
 local EntityMeta = FindMetaTable( 'Entity' )
 
@@ -20,12 +20,10 @@ local IsWorld = EntityMeta.IsWorld
 local GetPhysicsObjectCount = EntityMeta.GetPhysicsObjectCount
 local GetPhysicsObjectNum = EntityMeta.GetPhysicsObjectNum
 
-local VPhysicsIsValid = FindMetaTable( 'PhysObj' ).IsValid
-
 --
 -- Functions
 --
-local EntitiesIterator = ents.Iterator
+local UTIL_EntitiesIterator = ents.Iterator
 
 local substrof = string.sub
 local tableinsert = table.insert
@@ -33,7 +31,7 @@ local tableinsert = table.insert
 --
 -- Globals
 --
-local physcrashguard = physcrashguard
+local PhysicsCrashGuard = PhysicsCrashGuard
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
@@ -53,21 +51,21 @@ local PHYSCACHE_SKIP = {
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local subsequent = ipairs( {} )
 
-function physcrashguard.Iterator()
+function PhysicsCrashGuard.Iterator()
 
 	if ( PhysCache == nil ) then
 
 		PhysCache = {}
 
-		for _, pEntity in EntitiesIterator() do
+		for _, pEntity in UTIL_EntitiesIterator() do
 
-			local strClass = GetClass( pEntity )
+			local classname = GetClass( pEntity )
 
-			if ( PHYSCACHE_SKIP[strClass] or substrof( strClass, 1, 5 ) == 'func_' ) then
+			if ( PHYSCACHE_SKIP[classname] or substrof( classname, 1, 5 ) == 'func_' ) then
 				continue
 			end
 
-			if ( physcrashguard.util.IsPlayer( pEntity ) or physcrashguard.util.IsNPC( pEntity ) or physcrashguard.util.IsVehicle( pEntity ) or IsWorld( pEntity ) ) then
+			if ( PhysicsCrashGuard.util.IsPlayer( pEntity ) or PhysicsCrashGuard.util.IsNPC( pEntity ) or PhysicsCrashGuard.util.IsVehicle( pEntity ) or IsWorld( pEntity ) ) then
 				continue
 			end
 
@@ -77,7 +75,7 @@ function physcrashguard.Iterator()
 
 				local pPhysObj = GetPhysicsObjectNum( pEntity, numObj - 1 )
 
-				if ( VPhysicsIsValid( pPhysObj ) ) then
+				if ( pPhysObj:IsValid() ) then
 					tableinsert( PhysCache, pPhysObj )
 				end
 
@@ -94,7 +92,7 @@ end
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Sets the cache up for update
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-function physcrashguard.InvalidatePhysCache()
+function PhysicsCrashGuard.InvalidatePhysCache()
 
 	PhysCache = nil
 
@@ -107,8 +105,8 @@ hook.Add( 'OnEntityCreated', 'PhysicsCrashGuard_Iterator', function( pEntity )
 
 	timer.Simple( 0, function()
 
-		if ( pEntity:IsValid() ) then
-			physcrashguard.InvalidatePhysCache()
+		if ( EntityMeta.IsValid( pEntity ) ) then
+			PhysicsCrashGuard.InvalidatePhysCache()
 		end
 
 	end )
@@ -121,6 +119,6 @@ hook.Add( 'EntityRemoved', 'PhysicsCrashGuard_Iterator', function( pEntity, bFul
 		return
 	end
 
-	physcrashguard.InvalidatePhysCache()
+	PhysicsCrashGuard.InvalidatePhysCache()
 
 end )

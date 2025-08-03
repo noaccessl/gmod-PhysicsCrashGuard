@@ -9,22 +9,17 @@
 	Prepare
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 --
--- Metamethods: Entity; PhysObj
+-- Metamethods
 --
-local GetEntityTable = FindMetaTable( 'Entity' ).GetTable
-local IsRagdoll = FindMetaTable( 'Entity' ).IsRagdoll
+local EntityMeta = FindMetaTable( 'Entity' )
 
-local VPhysicsGetEntity = FindMetaTable( 'PhysObj' ).GetEntity
-local VPhysicsIsPenetrating = FindMetaTable( 'PhysObj' ).IsPenetrating
+local GetEntityTable = EntityMeta.GetTable
+local IsRagdoll = EntityMeta.IsRagdoll
 
 --
 -- Globals
 --
-local physcrashguard = physcrashguard
-
-local PhysIterator		= physcrashguard.Iterator
-local Resolve			= physcrashguard.Resolve
-local ResolveRagdoll	= physcrashguard.ResolveRagdoll
+local PhysicsCrashGuard = PhysicsCrashGuard
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
@@ -55,7 +50,7 @@ end, 'Main' )
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local PhysEnvGetLastSimulationTime = physenv.GetLastSimulationTime
 
-function physcrashguard.IsThereHang()
+function PhysicsCrashGuard.IsThereHang()
 
 	return PhysEnvGetLastSimulationTime() > g_flHangDetection
 
@@ -64,27 +59,27 @@ end
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Detect hang and deal with it
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-function physcrashguard.DetectHang()
+function PhysicsCrashGuard.DetectHang()
 
-	if ( physcrashguard.IsThereHang() ) then
+	if ( PhysicsCrashGuard.IsThereHang() ) then
 
-		for _, pPhysObj in PhysIterator() do
+		for _, pPhysObj in PhysicsCrashGuard.Iterator() do
 
-			local pEntity = VPhysicsGetEntity( pPhysObj )
+			local pEntity = pPhysObj:GetEntity()
 
 			if ( IsRagdoll( pEntity ) ) then
 
 				local pPhysPart = pPhysObj
 				local pRagdoll = pEntity
 
-				if ( VPhysicsIsPenetrating( pPhysPart ) ) then
-					ResolveRagdoll( pPhysPart, pRagdoll, GetEntityTable( pRagdoll ) )
+				if ( pPhysPart:IsPenetrating() ) then
+					PhysicsCrashGuard.ResolveRagdoll( pPhysPart, pRagdoll, GetEntityTable( pRagdoll ) )
 				end
 
 			else
 
-				if ( VPhysicsIsPenetrating( pPhysObj ) ) then
-					Resolve( pPhysObj, pEntity, GetEntityTable( pEntity ) )
+				if ( pPhysObj:IsPenetrating() ) then
+					PhysicsCrashGuard.Resolve( pPhysObj, pEntity, GetEntityTable( pEntity ) )
 				end
 
 			end
@@ -97,6 +92,6 @@ end
 
 hook.Add( 'Think', 'PhysicsCrashGuard_DetectHang', function()
 
-	physcrashguard.DetectHang()
+	PhysicsCrashGuard.DetectHang()
 
 end )

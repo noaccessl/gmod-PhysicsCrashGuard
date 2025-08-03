@@ -17,14 +17,14 @@ local getmetatable = getmetatable
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Init
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-physcrashguard.util = physcrashguard.util or {}
+PhysicsCrashGuard.util = PhysicsCrashGuard.util or {}
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Optimized entity-check
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local g_EntityMeta = FindMetaTable( 'Entity' )
 
-function physcrashguard.util.IsEntity( any )
+function PhysicsCrashGuard.util.IsEntity( any )
 
 	return getmetatable( any ) == g_EntityMeta
 
@@ -35,7 +35,7 @@ end
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local g_VehicleMeta = FindMetaTable( 'Vehicle' )
 
-function physcrashguard.util.IsVehicle( any )
+function PhysicsCrashGuard.util.IsVehicle( any )
 
 	return getmetatable( any ) == g_VehicleMeta
 
@@ -46,7 +46,7 @@ end
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local g_PlayerMeta = FindMetaTable( 'Player' )
 
-function physcrashguard.util.IsPlayer( any )
+function PhysicsCrashGuard.util.IsPlayer( any )
 
 	return getmetatable( any ) == g_PlayerMeta
 
@@ -57,7 +57,7 @@ end
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local g_NPCMeta = FindMetaTable( 'NPC' )
 
-function physcrashguard.util.IsNPC( any )
+function PhysicsCrashGuard.util.IsNPC( any )
 
 	return getmetatable( any ) == g_NPCMeta
 
