@@ -1,8 +1,9 @@
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
-	Resolver
+	Resolvers
 
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
@@ -11,20 +12,20 @@
 --
 -- Metamethods
 --
-local EntityMeta = FindMetaTable( 'Entity' )
+local CEntity = FindMetaTable( 'Entity' )
 
-local GetColor4Part = EntityMeta.GetColor4Part
-local SetColor4Part = EntityMeta.SetColor4Part
+local GetColor4Part = CEntity.GetColor4Part
+local SetColor4Part = CEntity.SetColor4Part
 
-local GetRenderMode = EntityMeta.GetRenderMode
-local SetRenderMode = EntityMeta.SetRenderMode
+local GetRenderMode = CEntity.GetRenderMode
+local SetRenderMode = CEntity.SetRenderMode
 
-local GetCollisionGroup = EntityMeta.GetCollisionGroup
-local SetCollisionGroup = EntityMeta.SetCollisionGroup
+local GetCollisionGroup = CEntity.GetCollisionGroup
+local SetCollisionGroup = CEntity.SetCollisionGroup
 
-local SetDrawShadow = EntityMeta.DrawShadow
+local SetDrawShadow = CEntity.DrawShadow
 
-local Remove = EntityMeta.Remove
+local Remove = CEntity.Remove
 
 --
 -- Enums
@@ -34,32 +35,41 @@ local COLLISION_GROUP_WORLD = COLLISION_GROUP_WORLD
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Deletion mode
+	Parameter
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local physcrashguard_delete = CreateConVar(
+local g_bDeleteOnResolve
 
-	'physcrashguard_delete',
-	'0',
+--
+-- ConVar Setting
+--
+do
 
-	FCVAR_ARCHIVE,
+	local physcrashguard_delete = CreateConVar(
 
-	'Experimental. Should entities to resolve be deleted? Won\'t apply to ragdolls.',
-	0, 1
+		'physcrashguard_delete',
+		'0',
 
-)
+		FCVAR_ARCHIVE,
 
-local g_bDeleteOnResolve = physcrashguard_delete:GetBool()
+		'Experimental. Should entities to resolve be deleted? Won\'t apply to ragdolls.',
+		0, 1
 
-cvars.AddChangeCallback( 'physcrashguard_delete', function( _, _, value )
+	)
 
-	g_bDeleteOnResolve = tobool( value )
+	g_bDeleteOnResolve = physcrashguard_delete:GetBool()
 
-end, 'Main' )
+	cvars.AddChangeCallback( 'physcrashguard_delete', function( _, _, value )
+
+		g_bDeleteOnResolve = tobool( value )
+
+	end, 'Main' )
+
+end
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Resolve
+	ResolveSimple
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-function PhysicsCrashGuard.Resolve( pPhysObj, pEntity, entity_t )
+function PhysCrashGuard.ResolveSimple( pPhysObj, pEntity, entity_t )
 
 	if ( g_bDeleteOnResolve ) then
 
@@ -68,13 +78,13 @@ function PhysicsCrashGuard.Resolve( pPhysObj, pEntity, entity_t )
 
 	end
 
-	if ( entity_t.m_PhysHang ) then
+	if ( entity_t.m_tPhysHangDetails ) then
 		return
 	end
 
 	local r, g, b, a = GetColor4Part( pEntity )
 
-	entity_t.m_PhysHang = {
+	entity_t.m_tPhysHangDetails = {
 
 		colEntityLast = { r; g; b; a };
 		iEntityLastRenderMode = GetRenderMode( pEntity );
@@ -96,22 +106,20 @@ end
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	ResolveRagdoll
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-function PhysicsCrashGuard.ResolveRagdoll( pPhysPart, pRagdoll, entity_t )
+function PhysCrashGuard.ResolveRagdoll( pPhysPart, pRagdoll, entity_t )
 
-	if ( entity_t.m_PhysHang ) then
+	if ( entity_t.m_tPhysHangDetails ) then
 
-		local physparts = entity_t.m_PhysHang.m_PhysParts
+		local ptPhysParts = entity_t.m_tPhysHangDetails.tPhysParts
 
-		if ( not physparts[pPhysPart] ) then
+		if ( not ptPhysParts[pPhysPart] ) then
 
 			pPhysPart:EnableMotion( false )
 
-			local index = physparts[0] + 1
-
-			physparts[index] = pPhysPart
+			local i = physparts[0] + 1
+			physparts[i] = pPhysPart
 			physparts[pPhysPart] = true
-
-			physparts[0] = index
+			physparts[0] = i
 
 		end
 
@@ -121,18 +129,18 @@ function PhysicsCrashGuard.ResolveRagdoll( pPhysPart, pRagdoll, entity_t )
 
 	local r, g, b, a = GetColor4Part( pRagdoll )
 
-	entity_t.m_PhysHang = {
+	entity_t.m_tPhysHangDetails = {
 
 		colEntityLast = { r; g; b; a };
 		iEntityLastRenderMode = GetRenderMode( pRagdoll );
 		iEntityLastCollisionGroup = GetCollisionGroup( pRagdoll );
 
-		m_PhysParts = {
+		tPhysParts = {
 
 			[0] = 1;
 
-			[pPhysPart] = true;
-			[1] = pPhysPart
+			[1] = pPhysPart;
+			[pPhysPart] = true
 
 		}
 

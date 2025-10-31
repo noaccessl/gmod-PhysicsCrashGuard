@@ -1,39 +1,39 @@
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Add some settings to the Spawn Menu
+	Purpose: Some settings to Spawn Menu
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local function SetupSettings( Page )
+local function fnSetupSettings( pPage )
 
-	Page:AddControl( 'Slider', {
+	pPage:AddControl( 'Slider', {
 
-		Label = 'Hang detection (ms)';
-		Command = 'physcrashguard_hangdetection';
+		Label = 'Hang threshold';
+		Command = 'physcrashguard_hangthreshold';
 		Type = 'Float';
 		Min = 1;
 		Max = 100
 
 	} )
-	Page:ControlHelp( 'What delay in physics simulation will be considered as a physics hang' )
+	pPage:ControlHelp( 'Threshold for counting last physics simulation duration as physics hang, in ms.' )
 
-	Page:AddControl( 'CheckBox', { Label = 'Delete on resolve'; Command = 'physcrashguard_delete' } )
-	Page:ControlHelp( 'Experimental. Should entities to resolve be deleted? Won\'t apply to ragdolls.' )
+	pPage:AddControl( 'CheckBox', { Label = 'Delete on resolve'; Command = 'physcrashguard_delete' } )
+	pPage:ControlHelp( 'Experimental. Should entities to resolve be deleted? Won\'t apply to ragdolls.' )
 
-	Page:AddControl( 'CheckBox', { Label = 'Freeze dupes on paste'; Command = 'physcrashguard_freezedupesonpaste' } )
-	Page:ControlHelp( 'Should dupes be freezed on paste?' )
+	pPage:AddControl( 'CheckBox', { Label = 'Freeze dupes on paste'; Command = 'physcrashguard_freezedupesonpaste' } )
+	pPage:ControlHelp( 'Should dupes be freezed on paste?' )
 
 end
 
-hook.Add( 'PopulateToolMenu', 'PhysicsCrashGuard_Settings', function()
+hook.Add( 'PopulateToolMenu', 'PhysCrashGuard_Settings', function()
 
 	spawnmenu.AddToolMenuOption(
 
 		'Utilities',
 		'Admin',
-		'PhysicsCrashGuard',
+		'PhysCrashGuard',
 		'Physics Crash Guard',
 		'',
 		'',
-		SetupSettings
+		fnSetupSettings
 
 	)
 

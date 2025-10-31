@@ -1,16 +1,12 @@
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
-	Gradual Unfreezing
+	Gradual Unfreezing Subsystem
 
-	Got inspired by this addon https://steamcommunity.com/sharedfiles/filedetails/?id=3288286594
-	Credits to the author of the addon.
-
-	Not my intention to replace the addon, but to implement the concept here so that there's no need to install both.
-	You can install both, no problem with it.
-
-	For compatibility sake it will not work with that addon.
+	Inspired by the PUOT addon (https://steamcommunity.com/sharedfiles/filedetails/?id=3288286594).
+	For compatibility, this subsystem won't be active with that addon enabled.
 
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+
 
 
 local DELAY_NEXTUNFREEZE = 0.03
@@ -21,35 +17,38 @@ local DELAY_NEXTUNFREEZE = 0.03
 --
 -- Metatables
 --
-local EntityMeta = FindMetaTable( 'Entity' )
+local CEntity = FindMetaTable( 'Entity' )
+local CPlayer = FindMetaTable( 'Player' )
 
-local IsUnfreezable = EntityMeta.GetUnFreezable
+--
+-- Metamethods
+--
+local IsEntityValid = CEntity.IsValid
 
-local GetPhysicsObjectCount = EntityMeta.GetPhysicsObjectCount
-local GetPhysicsObjectNum = EntityMeta.GetPhysicsObjectNum
+local GetEntityTable = CEntity.GetTable
 
-local GetEntityTable = EntityMeta.GetTable
+local IsNonUnfreezable = CEntity.GetUnFreezable
 
-local IsValidEntity = EntityMeta.IsValid
+local GetPhysicsObjectCount = CEntity.GetPhysicsObjectCount
+local GetPhysicsObjectNum = CEntity.GetPhysicsObjectNum
 
-local PlayerMeta = FindMetaTable( 'Player' )
-
-local GetAimTrace = PlayerMeta.GetEyeTrace
-local HasPlayerReleasedKey = PlayerMeta.KeyReleased
+local GetEyeTrace = CPlayer.GetEyeTrace
+local HasPlayerReleasedKey = CPlayer.KeyReleased
 
 --
 -- Functions
 --
-local subsequent = ipairs( {} )
-
+local ipairs = ipairs
 local GetCurTime = CurTime
+
+local GetAllConstrainedSequentially = PhysCrashGuard.GetAllConstrainedSequentially
+local TryToRestore = PhysCrashGuard.TryToRestore
 
 local GamemodeCall = gamemode.Call
 
 --
 -- Globals
 --
-local PhysicsCrashGuard = PhysicsCrashGuard
 local net = net
 
 --
@@ -59,7 +58,7 @@ util.AddNetworkString( 'physcrashguard_gradualunfreezing' )
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Unfreezing enums
+	Unfreezing Message Types Enums
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local UNFREEZE_START = 0
 local UNFREEZE_ABORT = 1
@@ -70,76 +69,74 @@ local MAX_UNFREEZE_BITS = 2
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Collects unfreezable objects
+	Purpose: Collects objects to be unfreezed
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local function CollectUnfreezable( pl, pLookupEntity )
+local function CollectUnfreezables( pPlayer, pLookupEntity )
 
-	local tblUnfreezing = { [0] = 0 }
-	local tblConstrainedEntities = PhysicsCrashGuard.util.GetAllConstrainedEntitiesSequentially( pLookupEntity )
+	local unfreezables = { [0] = 0 }
 
-	for _, pEntity in subsequent, tblConstrainedEntities, 0 do
+	for _, pEntity in ipairs( GetAllConstrainedSequentially( pLookupEntity ) ) do
 
-		if ( IsUnfreezable( pEntity ) ) then
+		if ( IsNonUnfreezable( pEntity ) ) then
 			continue
 		end
 
-		local numPhysObjs = GetPhysicsObjectCount( pEntity )
+		local bInHang = GetEntityTable( pEntity ).m_tPhysHangDetails ~= nil
 
-		for numObj = 1, numPhysObjs do
+		for num = 0, GetPhysicsObjectCount( pEntity ) - 1 do
 
-			local pPhysObj = GetPhysicsObjectNum( pEntity, numObj - 1 )
+			local pPhysObj = GetPhysicsObjectNum( pEntity, num )
 
-			if ( not GetEntityTable( pEntity ).m_PhysHang and pPhysObj:IsMoveable() ) then
+			if ( not bInHang and pPhysObj:IsMoveable() ) then
 				continue
 			end
 
-			if ( not GamemodeCall( 'CanPlayerUnfreeze', pl, pEntity, pPhysObj ) ) then
+			if ( not GamemodeCall( 'CanPlayerUnfreeze', pPlayer, pEntity, pPhysObj ) ) then
 				continue
 			end
 
-			local index = tblUnfreezing[0]
-			index = index + 1
-
-			tblUnfreezing[index] = pPhysObj
-			tblUnfreezing[0] = index
+			local i = unfreezables[0] + 1
+			unfreezables[i] = pPhysObj
+			unfreezables[0] = i
 
 		end
 
 	end
 
-	return tblUnfreezing
+	return unfreezables
 
 end
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Starts gradual unfreezing
+	Purpose: Starts gradual unfreezing for the player
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-function PhysicsCrashGuard.StartGradualUnfreezing( pl )
+function PhysCrashGuard.StartGradualUnfreezing( pPlayer )
 
 	-- Compatibility: Physgun Unfreeze Over Time
 	if ( _G.puot ) then
 		return
 	end
 
-	local traceAim = GetAimTrace( pl )
-	local pFacingEntity = traceAim.Entity
+	local traceAim = GetEyeTrace( pPlayer )
+	local pEntityTarget = traceAim.Entity
 
-	if ( not ( traceAim.HitNonWorld and IsValidEntity( pFacingEntity ) ) ) then
+	if ( not ( traceAim.HitNonWorld and IsEntityValid( pEntityTarget ) ) ) then
 		return
 	end
 
-	local player_t = GetEntityTable( pl )
+	local player_t = GetEntityTable( pPlayer )
 
-	local tblPhysObjs = CollectUnfreezable( pl, pFacingEntity )
+	local tPhysObjs = CollectUnfreezables( pPlayer, pEntityTarget )
 
-	if ( tblPhysObjs[0] == 0 ) then
+	if ( tPhysObjs[0] == 0 ) then
 		return
 	end
 
-	-- Give the status
-	player_t.m_Unfreezing = {
+	-- Give the state
+	player_t.m_stateUnfreezing = {
 
-		m_tPhysObjs = tblPhysObjs;
+		m_tPhysObjs = tPhysObjs;
+
 		m_iNextTime = GetCurTime() + DELAY_NEXTUNFREEZE;
 		m_iCurrent = 1
 
@@ -150,18 +147,18 @@ function PhysicsCrashGuard.StartGradualUnfreezing( pl )
 
 		net.WriteUInt( UNFREEZE_START, MAX_UNFREEZE_BITS )
 
-	net.Send( pl )
+	net.Send( pPlayer )
 
 	return false
 
 end
 
 --
--- Set in use
+-- Integrate
 --
-hook.Add( 'OnPhysgunReload', 'PhysicsCrashGuard_GradualUnfreezing', function( pPhysGun, pl )
+hook.Add( 'OnPhysgunReload', 'PhysCrashGuard_GradualUnfreezing', function( _, pPlayer )
 
-	local ret = PhysicsCrashGuard.StartGradualUnfreezing( pl )
+	local ret = PhysCrashGuard.StartGradualUnfreezing( pPlayer )
 
 	if ( ret ~= nil ) then
 		return ret
@@ -170,35 +167,35 @@ hook.Add( 'OnPhysgunReload', 'PhysicsCrashGuard_GradualUnfreezing', function( pP
 end )
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Processes gradual unfreezing
+	Purpose: Processes gradual unfreezing for the player
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-function PhysicsCrashGuard.ProcessGradualUnfreezing( pl )
+function PhysCrashGuard.ProcessGradualUnfreezing( pPlayer )
 
 	-- Compatibility: Physgun Unfreeze Over Time
 	if ( _G.puot ) then
 		return
 	end
 
-	local player_t = GetEntityTable( pl )
-	local tUnfreezing = player_t.m_Unfreezing
+	local player_t = GetEntityTable( pPlayer )
+	local pStateUnfreezing = player_t.m_stateUnfreezing
 
-	if ( not tUnfreezing ) then
+	if ( not pStateUnfreezing ) then
 		return
 	end
 
 	local flCurTime = GetCurTime()
 
-	local tblPhysObjs = tUnfreezing.m_tPhysObjs
+	local tPhysObjs = pStateUnfreezing.m_tPhysObjs
 
 	--
-	-- Abort the process
+	-- Process Abortion
 	--
-	if ( HasPlayerReleasedKey( pl, IN_RELOAD ) ) then
+	if ( HasPlayerReleasedKey( pPlayer, IN_RELOAD ) ) then
 
 		--
-		-- Freeze back the objects
+		-- Freeze the objects back again
 		--
-		for i, pPhysObj in subsequent, tblPhysObjs, 0 do
+		for _, pPhysObj in ipairs( tPhysObjs ) do
 
 			if ( pPhysObj:IsValid() and pPhysObj:IsMoveable() ) then
 
@@ -209,30 +206,30 @@ function PhysicsCrashGuard.ProcessGradualUnfreezing( pl )
 
 		end
 
-		-- Remove the status
-		player_t.m_Unfreezing = nil
+		-- Remove the state
+		player_t.m_stateUnfreezing = nil
 
 		-- Notify
 		net.Start( 'physcrashguard_gradualunfreezing' )
 
 			net.WriteUInt( UNFREEZE_ABORT, MAX_UNFREEZE_BITS )
 
-		net.Send( pl )
+		net.Send( pPlayer )
 
 		return
 
 	end
 
-	local iTotal = tblPhysObjs[0]
-	local iCurrent = tUnfreezing.m_iCurrent
+	local iTotal = tPhysObjs[0]
+	local iCurrent = pStateUnfreezing.m_iCurrent
 
 	--
-	-- On unfreezing done
+	-- Unfreezing Finish
 	--
 	if ( iCurrent > iTotal ) then
 
-		-- Remove the status
-		player_t.m_Unfreezing = nil
+		-- Remove the state
+		player_t.m_stateUnfreezing = nil
 
 		-- Notify
 		net.Start( 'physcrashguard_gradualunfreezing' )
@@ -240,35 +237,35 @@ function PhysicsCrashGuard.ProcessGradualUnfreezing( pl )
 			net.WriteUInt( UNFREEZE_DONE, MAX_UNFREEZE_BITS )
 			net.WriteUInt( iTotal, MAX_EDICT_BITS )
 
-		net.Send( pl )
+		net.Send( pPlayer )
 
 		return
 
 	end
 
 	--
-	-- Gradually unfreeze the objects
+	-- Gradual Unfreezing
 	--
-	local iNextTime = tUnfreezing.m_iNextTime
+	local iNextTime = pStateUnfreezing.m_iNextTime
 
 	if ( iNextTime < flCurTime ) then
 
-		local pPhysObj = tblPhysObjs[iCurrent]
+		local pPhysObj = tPhysObjs[iCurrent]
 
 		--
-		-- Terminate the process if during it some entity/physobj has been removed
+		-- Terminate the process if in midstream some object has been removed
 		--
 		if ( not pPhysObj:IsValid() ) then
 
-			-- Remove the status
-			player_t.m_Unfreezing = nil
+			-- Remove the state
+			player_t.m_stateUnfreezing = nil
 
 			-- Notify
 			net.Start( 'physcrashguard_gradualunfreezing' )
 
 				net.WriteUInt( UNFREEZE_ABORT, MAX_UNFREEZE_BITS )
 
-			net.Send( pl )
+			net.Send( pPlayer )
 
 			return
 
@@ -279,19 +276,13 @@ function PhysicsCrashGuard.ProcessGradualUnfreezing( pl )
 		--
 		local pEntity = pPhysObj:GetEntity()
 
-		if ( GetEntityTable( pEntity ).m_PhysHang ) then
+		TryToRestore( pEntity )
 
-			PhysicsCrashGuard.TryToRestore( pEntity )
+		pPhysObj:EnableMotion( true )
+		pPhysObj:Wake()
 
-		else
-
-			pPhysObj:EnableMotion( true )
-			pPhysObj:Wake()
-
-		end
-
-		tUnfreezing.m_iCurrent = iCurrent + 1
-		tUnfreezing.m_iNextTime = flCurTime + DELAY_NEXTUNFREEZE
+		pStateUnfreezing.m_iCurrent = iCurrent + 1
+		pStateUnfreezing.m_iNextTime = flCurTime + DELAY_NEXTUNFREEZE
 
 		-- Notify
 		net.Start( 'physcrashguard_gradualunfreezing' )
@@ -300,17 +291,17 @@ function PhysicsCrashGuard.ProcessGradualUnfreezing( pl )
 			net.WriteFloat( iCurrent / iTotal )
 			net.WriteEntity( pEntity )
 
-		net.Send( pl )
+		net.Send( pPlayer )
 
 	end
 
 end
 
 --
--- Set in use
+-- Integrate
 --
-hook.Add( 'PlayerPostThink', 'PhysicsCrashGuard_GradualUnfreezing', function( pl )
+hook.Add( 'PlayerPostThink', 'PhysCrashGuard_GradualUnfreezing', function( pPlayer )
 
-	PhysicsCrashGuard.ProcessGradualUnfreezing( pl )
+	PhysCrashGuard.ProcessGradualUnfreezing( pPlayer )
 
 end )

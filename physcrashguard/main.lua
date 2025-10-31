@@ -1,30 +1,28 @@
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
-	Physics Crash Guard
-	 A system that effectively detects and prevents crash attempts via physics objects.
+	A system that effectively detects and prevents crash attempts via physics objects.
 
-	 GitHub: https://github.com/noaccessl/gmod-PhysicsCrashGuard
-	 Steam Workshop: https://steamcommunity.com/sharedfiles/filedetails/?id=3148349097
+	Find on GitHub: https://github.com/noaccessl/gmod-PhysicsCrashGuard
+	Get on Steam Workshop: https://steamcommunity.com/sharedfiles/filedetails/?id=3148349097
 
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Init
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-PhysicsCrashGuard = PhysicsCrashGuard or {}
+PhysCrashGuard = PhysCrashGuard or {}
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Assemble the system
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 if ( SERVER ) then
 
-	include( 'util.lua' )
+	include( 'resolvers.lua' )
+	include( 'physcollector.lua' )
+	include( 'hang.lua' )
 
-	include( 'iterator.lua' )
-
-	include( 'resolving.lua' )
-	include( 'detection.lua' )
 	include( 'restoring.lua' )
 
 	include( 'constraints.lua' )

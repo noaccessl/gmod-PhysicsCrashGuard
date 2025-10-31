@@ -1,7 +1,9 @@
+
 # gmod-PhysicsCrashGuard
- A system that effectively detects and prevents crash attempts via physics objects.
- Simple and lightweight.
+A GLua system that effectively detects and prevents crash attempts via physics objects.
 
- [Showcase](https://youtu.be/FBUrrf0f-Ns)
+---
 
- [Workshop Page](https://steamcommunity.com/sharedfiles/filedetails/?id=3148349097)
+### Links
+* [Showcase on YouTube](https://youtu.be/FBUrrf0f-Ns)
+* [Get on Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=3148349097)

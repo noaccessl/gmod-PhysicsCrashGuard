@@ -1,6 +1,6 @@
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
-	A submodule responsible for freezing dupes upon their creation
+	Collector for almost all non-static physics objects that may potentially collide
 
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 
@@ -14,64 +14,77 @@
 --
 local CEntity = FindMetaTable( 'Entity' )
 
+local GetClass = CEntity.GetClass
+
+local IsWorld = CEntity.IsWorld
+
 local GetPhysicsObjectCount = CEntity.GetPhysicsObjectCount
 local GetPhysicsObjectNum = CEntity.GetPhysicsObjectNum
 
 --
 -- Functions
 --
-local ipairs = ipairs
+local UTIL_EntitiesIterator = ents.Iterator
+
+local substrof = string.sub
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Parameter
+	fast_isplayer; fast_isnpc
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local g_bFreezeDupesOnPaste
+local fast_isplayer
+local fast_isnpc
 
---
--- ConVar Setting
---
 do
 
-	local physcrashguard_freezedupesonpaste = CreateConVar(
+	local getmetatable = getmetatable
 
-		'physcrashguard_freezedupesonpaste',
-		'1',
+	local g_pPlayerMetaTable = FindMetaTable( 'Player' )
+	function fast_isplayer( any ) return getmetatable( any ) == g_pPlayerMetaTable end
 
-		FCVAR_ARCHIVE,
-
-		'Should dupes be freezed on paste?',
-		0, 1
-
-	)
-
-	g_bFreezeDupesOnPaste = physcrashguard_freezedupesonpaste:GetBool()
-
-	cvars.AddChangeCallback( 'physcrashguard_freezedupesonpaste', function( _, _, value )
-
-		g_bFreezeDupesOnPaste = tobool( value )
-
-	end, 'Main' )
+	local g_pNPCMetaTable = FindMetaTable( 'NPC' )
+	function fast_isnpc( any ) return getmetatable( any ) == g_pNPCMetaTable end
 
 end
 
+
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Catch & freeze just pasted dupes
+	Collector
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local function FreezeEntities( pArray )
+local INPUT_SKIP = {
 
-	for _, pEntity in ipairs( pArray ) do
+	prop_door_rotating = true;
+	prop_dynamic = true
 
-		local numPhysObjs = GetPhysicsObjectCount( pEntity )
+}
 
-		for num = 0, numPhysObjs - 1 do
+function PhysCrashGuard.PhysCollector()
+
+	local array, i = {}, 0
+
+	for _, pEntity in UTIL_EntitiesIterator() do
+
+		if ( fast_isplayer( pEntity )
+			or fast_isnpc( pEntity ) ) then
+			continue
+		end
+
+		local classname = GetClass( pEntity )
+
+		if ( INPUT_SKIP[classname]
+			or substrof( classname, 1, 5 ) == 'func_'
+			or IsWorld( pEntity ) ) then
+			continue
+		end
+
+		for num = 0, GetPhysicsObjectCount( pEntity ) - 1 do
 
 			local pPhysObj = GetPhysicsObjectNum( pEntity, num )
 
 			if ( pPhysObj:IsValid() ) then
 
-				pPhysObj:EnableMotion( false )
-				pPhysObj:Sleep()
+				i = i + 1
+				array[i] = pPhysObj
 
 			end
 
@@ -79,19 +92,6 @@ local function FreezeEntities( pArray )
 
 	end
 
+	return array
+
 end
-
---
--- Integrate; through GM:CanCreateUndo
---
-hook.Add( 'CanCreateUndo', 'PhysCrashGuard_FreezeDupesOnPaste', function( _, ptUndo )
-
-	if ( ptUndo.Name ~= 'Duplicator' ) then
-		return
-	end
-
-	if ( g_bFreezeDupesOnPaste ) then
-		FreezeEntities( ptUndo.Entities )
-	end
-
-end )

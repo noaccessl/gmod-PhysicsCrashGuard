@@ -1,64 +1,143 @@
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
-	Utilities
+	Detecting physics hang & Dealing with problematic objects
 
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Prepare
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 --
--- Shared Functions
+-- Functions
 --
-local getmetatable = getmetatable
+local PhysEnv_GetLastSimulationTime = physenv.GetLastSimulationTime
+local PhysEnv_SetPhysicsPaused = physenv.SetPhysicsPaused
+
+local ipairs = ipairs
+
+local PhysCollector = PhysCrashGuard.PhysCollector
+local ResolveRagdoll = PhysCrashGuard.ResolveRagdoll
+local ResolveSimple = PhysCrashGuard.ResolveSimple
+
+local CEntity = FindMetaTable( 'Entity' )
+local IsRagdoll = CEntity.IsRagdoll
+local GetEntityTable = CEntity.GetTable
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Init
+	Intermediate variable
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-PhysicsCrashGuard.util = PhysicsCrashGuard.util or {}
+local g_bResolveScheduled = false
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Optimized entity-check
+	Parameter
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local g_EntityMeta = FindMetaTable( 'Entity' )
+local g_flHangThreshold
 
-function PhysicsCrashGuard.util.IsEntity( any )
+--
+-- ConVar Setting
+--
+do
 
-	return getmetatable( any ) == g_EntityMeta
+	local physcrashguard_hangthreshold = CreateConVar(
+
+		'physcrashguard_hangthreshold',
+		'14',
+
+		FCVAR_ARCHIVE,
+
+		'Threshold for counting last physics simulation duration as physics hang, in ms.',
+		4, 2000
+
+	)
+
+	g_flHangThreshold = physcrashguard_hangthreshold:GetFloat() / 1000
+
+	cvars.AddChangeCallback( 'physcrashguard_hangthreshold', function( _, _, value )
+
+		g_flHangThreshold = ( tonumber( value ) or 14 ) / 1000
+
+	end, 'Main' )
 
 end
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Optimized vehicle-check
+	Purpose: Checks for hang in physics simulation
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local g_VehicleMeta = FindMetaTable( 'Vehicle' )
+function PhysCrashGuard.HangTest()
 
-function PhysicsCrashGuard.util.IsVehicle( any )
+	if ( g_bResolveScheduled ) then
+		return true
+	end
 
-	return getmetatable( any ) == g_VehicleMeta
+	return PhysEnv_GetLastSimulationTime() > g_flHangThreshold
 
 end
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Optimized player-check
+	Purpose: Resolves physics hang
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local g_PlayerMeta = FindMetaTable( 'Player' )
+function PhysCrashGuard.ResolveHang()
 
-function PhysicsCrashGuard.util.IsPlayer( any )
+	if ( not g_bResolveScheduled ) then
 
-	return getmetatable( any ) == g_PlayerMeta
+		PhysEnv_SetPhysicsPaused( true )
+		g_bResolveScheduled = true
+
+		return
+
+	end
+
+	g_bResolveScheduled = false
+
+	for _, pPhysObj in ipairs( PhysCollector() ) do
+
+		local pEntity = pPhysObj:GetEntity()
+
+		if ( IsRagdoll( pEntity ) ) then
+
+			local pPhysPart = pPhysObj
+			local pRagdoll = pEntity
+
+			if ( pPhysPart:IsPenetrating() ) then
+				ResolveRagdoll( pPhysPart, pRagdoll, GetEntityTable( pRagdoll ) )
+			end
+
+		else
+
+			if ( pPhysObj:IsPenetrating() ) then
+				ResolveSimple( pPhysObj, pEntity, GetEntityTable( pEntity ) )
+			end
+
+		end
+
+	end
+
+	PhysEnv_SetPhysicsPaused( false )
 
 end
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Optimized npc-check
+	Purpose: Convenience function around the two previous
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local g_NPCMeta = FindMetaTable( 'NPC' )
+local HangTest = PhysCrashGuard.HangTest
+local ResolveHang = PhysCrashGuard.ResolveHang
 
-function PhysicsCrashGuard.util.IsNPC( any )
+function PhysCrashGuard.Scan()
 
-	return getmetatable( any ) == g_NPCMeta
+	if ( HangTest() ) then
+		ResolveHang()
+	end
 
 end
+
+--
+-- Integrate
+--
+hook.Add( 'Think', 'PhysCrashGuard_Scan', function()
+
+	PhysCrashGuard.Scan()
+
+end )

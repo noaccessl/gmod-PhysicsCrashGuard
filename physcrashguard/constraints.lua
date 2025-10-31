@@ -1,8 +1,9 @@
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
-	Adjustments to some constraints in the game
+	Adjustments & Utility
 
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
@@ -11,22 +12,16 @@
 --
 -- Metamethods
 --
-local EntityMeta = FindMetaTable( 'Entity' )
+local CEntity = FindMetaTable( 'Entity' )
 
-local GetEntityTable    = EntityMeta.GetTable
-local IsEntityValid     = EntityMeta.IsValid
-local IsWorld           = EntityMeta.IsWorld
+local GetEntityTable = CEntity.GetTable
+local IsEntityValid = CEntity.IsValid
+local IsWorld = CEntity.IsWorld
 
 --
 -- Functions
 --
-local subsequent = ipairs( {} )
-local next = pairs( {} )
-
---
--- Globals
---
-local PhysicsCrashGuard = PhysicsCrashGuard
+local ipairs = ipairs
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
@@ -34,12 +29,12 @@ local PhysicsCrashGuard = PhysicsCrashGuard
 
 	Note:
 		Sliders will crash the game if:
-		 1. Two connected objects are too far away.
-		 2. They are bitching too much. (Consequence from the first point.)
+		1. Two connected objects are too far away.
+		2. They are bitching too much. (Consequence from the first point.)
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local MAX_DISTANCE = 6656
 
-hook.Add( 'OnEntityCreated', 'PhysicsCrashGuard_FixSliders', function( pEntity )
+hook.Add( 'OnEntityCreated', 'PhysCrashGuard_FixSliders', function( pEntity )
 
 	timer.Simple( 0, function()
 
@@ -49,20 +44,20 @@ hook.Add( 'OnEntityCreated', 'PhysicsCrashGuard_FixSliders', function( pEntity )
 
 		if ( pEntity:GetClass() == 'phys_slideconstraint' ) then
 
-			local Ent1 = pEntity.Ent1
+			local pConstrained1 = pEntity.Ent1
 
-			if ( not IsValid( Ent1 ) ) then
+			if ( not IsValid( pConstrained1 ) ) then
 				return
 			end
 
-			local Ent2 = pEntity.Ent2
+			local pConstrained2 = pEntity.Ent2
 
-			if ( not IsValid( Ent2 ) ) then
+			if ( not IsValid( pConstrained2 ) ) then
 				return
 			end
 
-			local vecPos1 = Ent1:GetPos()
-			local vecPos2 = Ent2:GetPos()
+			local vecPos1 = pConstrained1:GetPos()
+			local vecPos2 = pConstrained2:GetPos()
 
 			local flCurrentDist = vecPos1:Distance( vecPos2 )
 			flCurrentDist = math.min( flCurrentDist, MAX_DISTANCE )
@@ -70,14 +65,14 @@ hook.Add( 'OnEntityCreated', 'PhysicsCrashGuard_FixSliders', function( pEntity )
 			local vecDir = ( vecPos2 - vecPos1 ):Angle():Forward()
 			local vecLimitedPos = vecPos1 + vecDir * flCurrentDist
 
-			Ent2:SetPos( vecLimitedPos )
+			pConstrained2:SetPos( vecLimitedPos )
 
 			local flAddLength = MAX_DISTANCE - flCurrentDist
 
 			constraint.Rope(
 
-				Ent1,
-				Ent2,
+				pConstrained1,
+				pConstrained2,
 				0, -- Bone 1
 				0, -- Bone 2
 				vector_origin, -- Local pos 1
@@ -97,27 +92,38 @@ end )
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+	fast_isentity
+–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+local fast_isentity; do
+
+	local getmetatable = getmetatable
+	local g_pEntityMetaTable = FindMetaTable( 'Entity' )
+	function fast_isentity( any ) return getmetatable( any ) == g_pEntityMetaTable end
+
+end
+
+--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Optimized constraint.HasConstraints
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-function PhysicsCrashGuard.util.HasConstraints( pEntity )
+local function Fast_HasConstraints( pEntity )
 
-	if ( not PhysicsCrashGuard.util.IsEntity( pEntity ) ) then
+	if ( not fast_isentity( pEntity ) ) then
 		return false
 	end
 
 	local entity_t = GetEntityTable( pEntity )
-	local tConstraints = entity_t.Constraints
+	local ptConstraints = entity_t.Constraints
 
-	if ( not tConstraints ) then
+	if ( not ptConstraints ) then
 		return false
 	end
 
 	local bHas = false
 
-	for index, pConstraint in next, tConstraints do
+	for i, pConstraint in ipairs( ptConstraints ) do
 
 		if ( not IsEntityValid( pConstraint ) ) then
-			tConstraints[index] = nil
+			ptConstraints[i] = nil
 		else
 			bHas = true
 		end
@@ -129,39 +135,33 @@ function PhysicsCrashGuard.util.HasConstraints( pEntity )
 end
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Optimized (and reduced) constraint.GetTable
+	Purpose: Optimized and simplified constraint.GetTable
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local HasConstraints = PhysicsCrashGuard.util.HasConstraints
+local function Fast_GetConstraintsData( pEntity )
 
-function PhysicsCrashGuard.util.GetConstraintsData( pEntity )
-
-	if ( not HasConstraints( pEntity ) ) then
+	if ( not Fast_HasConstraints( pEntity ) ) then
 		return false
 	end
 
-	local constraintsdata = { [0] = 0 }
+	local constraintsdata, i = {}, 0
 
-	for _, pConstraint in next, GetEntityTable( pEntity ).Constraints do
+	for _, pConstraint in ipairs( GetEntityTable( pEntity ).Constraints ) do
 
 		local constraint_t = GetEntityTable( pConstraint )
 
-		local index = constraintsdata[0] + 1
-		constraintsdata[index] = constraint_t
-		constraintsdata[0] = index
+		i = i + 1
+		constraintsdata[i] = constraint_t
 
 	end
 
-	constraintsdata[0] = nil
 	return constraintsdata
 
 end
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Purpose: Optimized constraint.GetAllConstrainedEntities
+	Purpose: Optimized and altered constraint.GetAllConstrainedEntities
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local GetConstraintsData = PhysicsCrashGuard.util.GetConstraintsData
-
-local function GetAllConstrainedEntitiesSequentially( pEntity, output, map )
+local function GetAllConstrainedSequentially( pEntity, output, map )
 
 	output = output or { [0] = 0 }
 	map = map or {}
@@ -174,30 +174,29 @@ local function GetAllConstrainedEntitiesSequentially( pEntity, output, map )
 		return
 	end
 
-	local index = output[0]
-	index = index + 1
-
-	output[index] = pEntity
+	local i = output[0] + 1
+	output[i] = pEntity
 	map[pEntity] = true
+	output[0] = i
 
-	output[0] = index
-
-	local ret = GetConstraintsData( pEntity )
+	local ret = Fast_GetConstraintsData( pEntity )
 
 	if ( ret ~= false ) then
 
-		local constraintsdata = ret
+		local tConstraintsData = ret
 
-		for _, constraint_t in subsequent, constraintsdata, 0 do
+		for _, constraint_t in ipairs( tConstraintsData ) do
 
-			for i = 1, 2 do
+			local pConstrained1 = constraint_t.Ent1
 
-				local pConstrained = constraint_t[ 'Ent' .. i ]
+			if ( not IsWorld( pConstrained1 ) ) then
+				GetAllConstrainedSequentially( pConstrained1, output, map )
+			end
 
-				if ( not IsWorld( pConstrained ) ) then
-					GetAllConstrainedEntitiesSequentially( pConstrained, output, map )
-				end
+			local pConstrained2 = constraint_t.Ent2
 
+			if ( not IsWorld( pConstrained2 ) ) then
+				GetAllConstrainedSequentially( pConstrained2, output, map )
 			end
 
 		end
@@ -208,4 +207,4 @@ local function GetAllConstrainedEntitiesSequentially( pEntity, output, map )
 
 end
 
-PhysicsCrashGuard.util.GetAllConstrainedEntitiesSequentially = GetAllConstrainedEntitiesSequentially
+PhysCrashGuard.GetAllConstrainedSequentially = GetAllConstrainedSequentially

@@ -1,21 +1,13 @@
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
-	Display the process of unfreezing objects
+	Display of the process of unfreezing objects
 
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 
 
---[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Prepare
-–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
---
--- Globals
---
-local PhysicsCrashGuard = PhysicsCrashGuard
-
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Unfreezing enums
+	Unfreezing Message Types Enums
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local UNFREEZE_START = 0
 local UNFREEZE_ABORT = 1
@@ -28,7 +20,7 @@ local MAX_UNFREEZE_BITS = 2
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Unfreezing data
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-PhysicsCrashGuard.m_Unfreezing = PhysicsCrashGuard.m_Unfreezing or {
+PhysCrashGuard.m_tUnfreezingDetails = PhysCrashGuard.m_tUnfreezingDetails or {
 
 	Status = 0;
 	Entities = {}
@@ -48,17 +40,17 @@ do
 
 
 	-- Get the status
-	function IUnfreezingQueue:GetStatus() return PhysicsCrashGuard.m_Unfreezing.Status end
+	function IUnfreezingQueue:GetStatus() return PhysCrashGuard.m_tUnfreezingDetails.Status end
 
 	-- Get all entities
-	function IUnfreezingQueue:GetAll() return PhysicsCrashGuard.m_Unfreezing.Entities end
+	function IUnfreezingQueue:GetAll() return PhysCrashGuard.m_tUnfreezingDetails.Entities end
 
 	--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 		SetStatus
 	–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 	function IUnfreezingQueue:SetStatus( iStatus )
 
-		PhysicsCrashGuard.m_Unfreezing.Status = iStatus
+		PhysCrashGuard.m_tUnfreezingDetails.Status = iStatus
 
 	end
 
@@ -108,9 +100,9 @@ do
 	end
 
 	--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-		PropelForward
+		Progress
 	–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-	function IUnfreezingQueue:PropelForward( flFraction, pEntity )
+	function IUnfreezingQueue:Progress( flFraction, pEntity )
 
 		self:SetStatus( UNFREEZE_PROGRESS )
 		local iUnfrozeObjects = self:Add( pEntity )
@@ -141,7 +133,7 @@ do
 	–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 	function IUnfreezingQueue:Add( pEntity )
 
-		return table.insert( PhysicsCrashGuard.m_Unfreezing.Entities, pEntity )
+		return table.insert( PhysCrashGuard.m_tUnfreezingDetails.Entities, pEntity )
 
 	end
 
@@ -150,35 +142,35 @@ do
 	–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 	function IUnfreezingQueue:Clear()
 
-		table.Empty( PhysicsCrashGuard.m_Unfreezing.Entities )
-
-	end
-
-
-	--
-	-- Create
-	--
-	if ( not PhysicsCrashGuard.m_pUnfreezingQueue ) then
-
-		PhysicsCrashGuard.m_pUnfreezingQueue = newproxy()
-		debug.setmetatable( PhysicsCrashGuard.m_pUnfreezingQueue, IUnfreezingQueue )
-
-		g_pUnfreezingQueue = PhysicsCrashGuard.m_pUnfreezingQueue
+		table.Empty( PhysCrashGuard.m_tUnfreezingDetails.Entities )
 
 	end
 
 end
+
+--
+-- Create
+--
+if ( not PhysCrashGuard.m_pUnfreezingQueue ) then
+
+	PhysCrashGuard.m_pUnfreezingQueue = newproxy()
+	debug.setmetatable( PhysCrashGuard.m_pUnfreezingQueue, IUnfreezingQueue )
+
+end
+
+g_pUnfreezingQueue = PhysCrashGuard.m_pUnfreezingQueue
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Display the process
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local g_colUnfreezing = Color( 76, 255, 255 )
-local g_colAbort = Color( 255 - g_colUnfreezing.r, 255 - g_colUnfreezing.g, 255 - g_colUnfreezing.b ) -- Let's have inverted color
+local g_colAbort = Color( 255 - g_colUnfreezing.r, 255 - g_colUnfreezing.g, 255 - g_colUnfreezing.b )
+-- Let's have inverted color
 
 local g_colDisplaying = g_colUnfreezing
 
-hook.Add( 'PreDrawHalos', 'PhysicsCrashGuard_GradualUnfreezing', function()
+hook.Add( 'PreDrawHalos', 'PhysCrashGuard_GradualUnfreezing', function()
 
 	local tUnfreezingEntities = g_pUnfreezingQueue:GetAll()
 
@@ -219,7 +211,7 @@ net.Receive( 'physcrashguard_gradualunfreezing', function()
 		local flFraction = net.ReadFloat()
 		local pEntity = net.ReadEntity()
 
-		g_pUnfreezingQueue:PropelForward( flFraction, pEntity )
+		g_pUnfreezingQueue:Progress( flFraction, pEntity )
 
 	elseif ( iType == UNFREEZE_DONE ) then
 
