@@ -118,10 +118,10 @@ function PhysCrashGuard.ResolveRagdoll( pPhysPart, pRagdoll, entity_t )
 
 			pPhysPart:EnableMotion( false )
 
-			local i = physparts[0] + 1
-			physparts[i] = pPhysPart
-			physparts[pPhysPart] = true
-			physparts[0] = i
+			local i = ptPhysParts[0] + 1
+			ptPhysParts[i] = pPhysPart
+			ptPhysParts[pPhysPart] = true
+			ptPhysParts[0] = i
 
 		end
 
