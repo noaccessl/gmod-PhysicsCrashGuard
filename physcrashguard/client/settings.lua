@@ -9,8 +9,8 @@ local function fnSetupSettings( pPage )
 		Label = 'Hang threshold';
 		Command = 'physcrashguard_hangthreshold';
 		Type = 'Float';
-		Min = 1;
-		Max = 100
+		Min = 4;
+		Max = 200
 
 	} )
 	pPage:ControlHelp( 'Threshold for counting last physics simulation duration as physics hang, in ms.' )
