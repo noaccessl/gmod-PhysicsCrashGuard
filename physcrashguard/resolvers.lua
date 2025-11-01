@@ -108,9 +108,11 @@ end
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 function PhysCrashGuard.ResolveRagdoll( pPhysPart, pRagdoll, entity_t )
 
-	if ( entity_t.m_tPhysHangDetails ) then
+	local tPhysHangDetails = entity_t.m_tPhysHangDetails
 
-		local ptPhysParts = entity_t.m_tPhysHangDetails.tPhysParts
+	if ( tPhysHangDetails ) then
+
+		local ptPhysParts = tPhysHangDetails.tPhysParts
 
 		if ( not ptPhysParts[pPhysPart] ) then
 

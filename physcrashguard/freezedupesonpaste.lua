@@ -58,13 +58,11 @@ end
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Catch & freeze just pasted dupes
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local function FreezeEntities( pArray )
+local function FreezeEntities( pArrayOfEntities )
 
-	for _, pEntity in ipairs( pArray ) do
+	for _, pEntity in ipairs( pArrayOfEntities ) do
 
-		local numPhysObjs = GetPhysicsObjectCount( pEntity )
-
-		for num = 0, numPhysObjs - 1 do
+		for num = 0, GetPhysicsObjectCount( pEntity ) - 1 do
 
 			local pPhysObj = GetPhysicsObjectNum( pEntity, num )
 

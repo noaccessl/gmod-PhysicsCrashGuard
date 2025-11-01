@@ -196,30 +196,6 @@ end )
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 net.Receive( 'physcrashguard_gradualunfreezing', function()
 
-	local iType = net.ReadUInt( MAX_UNFREEZE_BITS )
-
-	if ( iType == UNFREEZE_START ) then
-
-		g_pUnfreezingQueue:Start()
-
-	elseif ( iType == UNFREEZE_ABORT ) then
-
-		g_pUnfreezingQueue:Abort()
-
-	elseif ( iType == UNFREEZE_PROGRESS ) then
-
-		local flFraction = net.ReadFloat()
-		local pEntity = net.ReadEntity()
-
-		g_pUnfreezingQueue:Progress( flFraction, pEntity )
-
-	elseif ( iType == UNFREEZE_DONE ) then
-
-		local iUnfrozeObjects = net.ReadUInt( MAX_EDICT_BITS )
-		g_pUnfreezingQueue:Finish( iUnfrozeObjects )
-
-	end
-
 	-- Update colors
 	do
 
@@ -232,6 +208,36 @@ net.Receive( 'physcrashguard_gradualunfreezing', function()
 		end
 
 		g_colAbort = Color( 255 - g_colUnfreezing.r, 255 - g_colUnfreezing.g, 255 - g_colUnfreezing.b )
+
+	end
+
+	local iType = net.ReadUInt( MAX_UNFREEZE_BITS )
+
+	if ( iType == UNFREEZE_START ) then
+
+		g_pUnfreezingQueue:Start()
+		return
+
+	end
+
+	if ( iType == UNFREEZE_ABORT ) then
+
+		g_pUnfreezingQueue:Abort()
+		return
+
+	end
+
+	if ( iType == UNFREEZE_PROGRESS ) then
+
+		g_pUnfreezingQueue:Progress( net.ReadFloat(), net.ReadEntity() )
+		return
+
+	end
+
+	if ( iType == UNFREEZE_DONE ) then
+
+		g_pUnfreezingQueue:Finish( net.ReadUInt( MAX_EDICT_BITS ) )
+		return
 
 	end
 
