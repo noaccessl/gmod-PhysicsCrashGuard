@@ -15,17 +15,12 @@
 local CEntity = FindMetaTable( 'Entity' )
 
 local SetCollisionGroup = CEntity.SetCollisionGroup
-local SetDrawShadow = CEntity.DrawShadow
-local SetColor4Part = CEntity.SetColor4Part
 local SetRenderMode = CEntity.SetRenderMode
+local SetColor4Part = CEntity.SetColor4Part
+local DrawShadow = CEntity.DrawShadow
 
 local GetEntityTable = CEntity.GetTable
 local GetPhysicsObject = CEntity.GetPhysicsObject
-
---
--- Functions
---
-local unpack = unpack
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
@@ -54,12 +49,13 @@ local function Restore( pEntity, entity_t, pPhysObj )
 
 	end
 
-	SetDrawShadow( pEntity, true )
-
-	SetColor4Part( pEntity, unpack( ptPhysHangDetails.colEntityLast, 1, 4 ) )
-	SetRenderMode( pEntity, ptPhysHangDetails.iEntityLastRenderMode )
-
 	SetCollisionGroup( pEntity, ptPhysHangDetails.iEntityLastCollisionGroup )
+
+	local ptLastColor = ptPhysHangDetails.colEntityLast
+	SetRenderMode( pEntity, ptPhysHangDetails.iEntityLastRenderMode )
+	SetColor4Part( pEntity, ptLastColor[1], ptLastColor[2], ptLastColor[3], ptLastColor[4] )
+
+	DrawShadow( pEntity, true )
 
 	entity_t.m_tPhysHangDetails = nil
 

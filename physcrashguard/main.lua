@@ -22,7 +22,6 @@ if ( SERVER ) then
 	include( 'resolvers.lua' )
 	include( 'physcollector.lua' )
 	include( 'hang.lua' )
-
 	include( 'restoring.lua' )
 
 	include( 'constraints.lua' )
@@ -31,12 +30,14 @@ if ( SERVER ) then
 
 	include( 'freezedupesonpaste.lua' )
 
-	AddCSLuaFile( 'client/gradualunfreezing.lua' )
 	AddCSLuaFile( 'client/settings.lua' )
+
+	AddCSLuaFile( 'client/gradualunfreezing.lua' )
 
 elseif ( CLIENT ) then
 
-	include( 'client/gradualunfreezing.lua' )
 	include( 'client/settings.lua' )
+
+	include( 'client/gradualunfreezing.lua' )
 
 end

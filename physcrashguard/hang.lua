@@ -7,26 +7,6 @@
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Prepare
-–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
---
--- Functions
---
-local PhysEnv_GetLastSimulationTime = physenv.GetLastSimulationTime
-local PhysEnv_SetPhysicsPaused = physenv.SetPhysicsPaused
-
-local ipairs = ipairs
-
-local PhysCollector = PhysCrashGuard.PhysCollector
-local ResolveRagdoll = PhysCrashGuard.ResolveRagdoll
-local ResolveSimple = PhysCrashGuard.ResolveSimple
-
-local CEntity = FindMetaTable( 'Entity' )
-local IsRagdoll = CEntity.IsRagdoll
-local GetEntityTable = CEntity.GetTable
-
-
---[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Intermediate variable
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local g_bResolveScheduled = false
@@ -72,18 +52,26 @@ function PhysCrashGuard.HangTest()
 		return true
 	end
 
-	return PhysEnv_GetLastSimulationTime() > g_flHangThreshold
+	return physenv.GetLastSimulationTime() > g_flHangThreshold
 
 end
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Resolves physics hang
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+local PhysCollector = PhysCrashGuard.PhysCollector
+local ResolveRagdoll = PhysCrashGuard.ResolveRagdoll
+local ResolveSimple = PhysCrashGuard.ResolveSimple
+
+local CEntity = FindMetaTable( 'Entity' )
+local IsRagdoll = CEntity.IsRagdoll
+local GetEntityTable = CEntity.GetTable
+
 function PhysCrashGuard.ResolveHang()
 
 	if ( not g_bResolveScheduled ) then
 
-		PhysEnv_SetPhysicsPaused( true )
+		physenv.SetPhysicsPaused( true )
 		g_bResolveScheduled = true
 
 		return
@@ -105,17 +93,17 @@ function PhysCrashGuard.ResolveHang()
 				ResolveRagdoll( pPhysPart, pRagdoll, GetEntityTable( pRagdoll ) )
 			end
 
-		else
+			continue
 
-			if ( pPhysObj:IsPenetrating() ) then
-				ResolveSimple( pPhysObj, pEntity, GetEntityTable( pEntity ) )
-			end
+		end
 
+		if ( pPhysObj:IsPenetrating() ) then
+			ResolveSimple( pPhysObj, pEntity, GetEntityTable( pEntity ) )
 		end
 
 	end
 
-	PhysEnv_SetPhysicsPaused( false )
+	physenv.SetPhysicsPaused( false )
 
 end
 

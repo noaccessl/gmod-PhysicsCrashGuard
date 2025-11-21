@@ -1,41 +1,16 @@
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
-	Collector for almost all non-static physics objects that may potentially collide
+	Collector for almost all non-static physics objects
+	that may potentially collide at some point in time
 
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Prepare
+	fast_isplayer, fast_isnpc
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
---
--- Metamethods
---
-local CEntity = FindMetaTable( 'Entity' )
-
-local GetClass = CEntity.GetClass
-
-local IsWorld = CEntity.IsWorld
-
-local GetPhysicsObjectCount = CEntity.GetPhysicsObjectCount
-local GetPhysicsObjectNum = CEntity.GetPhysicsObjectNum
-
---
--- Functions
---
-local UTIL_EntitiesIterator = ents.Iterator
-
-local substrof = string.sub
-
-
---[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	fast_isplayer; fast_isnpc
-–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local fast_isplayer
-local fast_isnpc
-
-do
+local fast_isplayer, fast_isnpc; do
 
 	local getmetatable = getmetatable
 
@@ -47,7 +22,6 @@ do
 
 end
 
-
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Collector
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
@@ -58,11 +32,19 @@ local INPUT_SKIP = {
 
 }
 
+local CEntity = FindMetaTable( 'Entity' )
+local GetClass = CEntity.GetClass
+local IsWorld = CEntity.IsWorld
+local GetPhysicsObjectCount = CEntity.GetPhysicsObjectCount
+local GetPhysicsObjectNum = CEntity.GetPhysicsObjectNum
+
+local strsub = string.sub
+
 function PhysCrashGuard.PhysCollector()
 
 	local array, i = {}, 0
 
-	for _, pEntity in UTIL_EntitiesIterator() do
+	for _, pEntity in ents.Iterator() do
 
 		if ( fast_isplayer( pEntity )
 			or fast_isnpc( pEntity ) ) then
@@ -72,7 +54,7 @@ function PhysCrashGuard.PhysCollector()
 		local classname = GetClass( pEntity )
 
 		if ( INPUT_SKIP[classname]
-			or substrof( classname, 1, 5 ) == 'func_'
+			or strsub( classname, 1, 5 ) == 'func_'
 			or IsWorld( pEntity ) ) then
 			continue
 		end

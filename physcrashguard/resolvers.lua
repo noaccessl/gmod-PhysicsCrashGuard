@@ -14,24 +14,22 @@
 --
 local CEntity = FindMetaTable( 'Entity' )
 
-local GetColor4Part = CEntity.GetColor4Part
-local SetColor4Part = CEntity.SetColor4Part
-
-local GetRenderMode = CEntity.GetRenderMode
-local SetRenderMode = CEntity.SetRenderMode
-
 local GetCollisionGroup = CEntity.GetCollisionGroup
-local SetCollisionGroup = CEntity.SetCollisionGroup
+local GetRenderMode = CEntity.GetRenderMode
+local GetColor4Part = CEntity.GetColor4Part
 
-local SetDrawShadow = CEntity.DrawShadow
+local SetCollisionGroup = CEntity.SetCollisionGroup
+local SetRenderMode = CEntity.SetRenderMode
+local SetColor4Part = CEntity.SetColor4Part
+local DrawShadow = CEntity.DrawShadow
 
 local Remove = CEntity.Remove
 
 --
 -- Enums
 --
-local RENDERMODE_TRANSCOLOR = RENDERMODE_TRANSCOLOR
 local COLLISION_GROUP_WORLD = COLLISION_GROUP_WORLD
+local RENDERMODE_TRANSCOLOR = RENDERMODE_TRANSCOLOR
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
@@ -82,24 +80,25 @@ function PhysCrashGuard.ResolveSimple( pPhysObj, pEntity, entity_t )
 		return
 	end
 
+	pPhysObj:EnableMotion( false )
+
 	local r, g, b, a = GetColor4Part( pEntity )
 
 	entity_t.m_tPhysHangDetails = {
 
-		colEntityLast = { r; g; b; a };
+		iEntityLastCollisionGroup = GetCollisionGroup( pEntity );
+
 		iEntityLastRenderMode = GetRenderMode( pEntity );
-		iEntityLastCollisionGroup = GetCollisionGroup( pEntity )
+		colEntityLast = { r; g; b; a }
 
 	}
 
-	pPhysObj:EnableMotion( false )
-
-	SetDrawShadow( pEntity, false )
+	SetCollisionGroup( pEntity, COLLISION_GROUP_WORLD )
 
 	SetRenderMode( pEntity, RENDERMODE_TRANSCOLOR )
 	SetColor4Part( pEntity, r, g, b, 180 )
 
-	SetCollisionGroup( pEntity, COLLISION_GROUP_WORLD )
+	DrawShadow( pEntity, false )
 
 end
 
@@ -129,13 +128,16 @@ function PhysCrashGuard.ResolveRagdoll( pPhysPart, pRagdoll, entity_t )
 
 	end
 
+	pPhysPart:EnableMotion( false )
+
 	local r, g, b, a = GetColor4Part( pRagdoll )
 
 	entity_t.m_tPhysHangDetails = {
 
-		colEntityLast = { r; g; b; a };
-		iEntityLastRenderMode = GetRenderMode( pRagdoll );
 		iEntityLastCollisionGroup = GetCollisionGroup( pRagdoll );
+
+		iEntityLastRenderMode = GetRenderMode( pRagdoll );
+		colEntityLast = { r; g; b; a };
 
 		tPhysParts = {
 
@@ -148,13 +150,11 @@ function PhysCrashGuard.ResolveRagdoll( pPhysPart, pRagdoll, entity_t )
 
 	}
 
-	pPhysPart:EnableMotion( false )
-
-	SetDrawShadow( pRagdoll, false )
+	SetCollisionGroup( pRagdoll, COLLISION_GROUP_WORLD )
 
 	SetRenderMode( pRagdoll, RENDERMODE_TRANSCOLOR )
 	SetColor4Part( pRagdoll, r, g, b, 180 )
 
-	SetCollisionGroup( pRagdoll, COLLISION_GROUP_WORLD )
+	DrawShadow( pRagdoll, false )
 
 end

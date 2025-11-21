@@ -11,6 +11,7 @@
 
 local DELAY_NEXTUNFREEZE = 0.03
 
+
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Prepare
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
@@ -21,33 +22,16 @@ local CEntity = FindMetaTable( 'Entity' )
 local CPlayer = FindMetaTable( 'Player' )
 
 --
--- Metamethods
+-- Common Hot Functions
 --
+local GetEntityTable = CEntity.GetTable
 local IsEntityValid = CEntity.IsValid
 
-local GetEntityTable = CEntity.GetTable
-
-local IsNonUnfreezable = CEntity.GetUnFreezable
-
-local GetPhysicsObjectCount = CEntity.GetPhysicsObjectCount
-local GetPhysicsObjectNum = CEntity.GetPhysicsObjectNum
-
-local GetEyeTrace = CPlayer.GetEyeTrace
-local HasPlayerReleasedKey = CPlayer.KeyReleased
-
---
--- Functions
---
 local ipairs = ipairs
-local GetCurTime = CurTime
-
-local GetAllConstrainedSequentially = PhysCrashGuard.GetAllConstrainedSequentially
-local TryToRestore = PhysCrashGuard.TryToRestore
-
-local GamemodeCall = gamemode.Call
+local CurTime = CurTime
 
 --
--- Globals
+-- Libraries
 --
 local net = net
 
@@ -69,13 +53,136 @@ local MAX_UNFREEZE_BITS = 2
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+	fast_isentity
+–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+local fast_isentity; do
+
+	local getmetatable = getmetatable
+	local g_pEntityMetaTable = FindMetaTable( 'Entity' )
+	function fast_isentity( any ) return getmetatable( any ) == g_pEntityMetaTable end
+
+end
+
+--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+	Purpose: Optimized constraint.HasConstraints
+–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+local function Fast_HasConstraints( pEntity )
+
+	if ( not fast_isentity( pEntity ) ) then
+		return false
+	end
+
+	local entity_t = GetEntityTable( pEntity )
+	local ptConstraints = entity_t.Constraints
+
+	if ( not ptConstraints ) then
+		return false
+	end
+
+	local bHas = false
+
+	for i, pConstraint in ipairs( ptConstraints ) do
+
+		if ( not IsEntityValid( pConstraint ) ) then
+			ptConstraints[i] = nil
+		else
+			bHas = true
+		end
+
+	end
+
+	return bHas
+
+end
+
+--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+	Purpose: Optimized and simplified constraint.GetTable
+–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+local function Fast_GetConstraintsData( pEntity )
+
+	if ( not Fast_HasConstraints( pEntity ) ) then
+		return false
+	end
+
+	local constraintsdata, i = {}, 0
+
+	for _, pConstraint in ipairs( GetEntityTable( pEntity ).Constraints ) do
+
+		local constraint_t = GetEntityTable( pConstraint )
+
+		i = i + 1
+		constraintsdata[i] = constraint_t
+
+	end
+
+	return constraintsdata
+
+end
+
+--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+	Purpose: Optimized and altered constraint.GetAllConstrainedEntities
+–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+local IsWorld = CEntity.IsWorld
+
+local function GetAllConstrainedSequential( pEntity, output, map )
+
+	output = output or { [0] = 0 }
+	map = map or {}
+
+	if ( not IsEntityValid( pEntity ) ) then
+		return
+	end
+
+	if ( map[pEntity] ) then
+		return
+	end
+
+	local i = output[0] + 1
+	output[i] = pEntity
+	map[pEntity] = true
+	output[0] = i
+
+	local ret = Fast_GetConstraintsData( pEntity )
+
+	if ( ret ~= false ) then
+
+		local tConstraintsData = ret
+
+		for _, constraint_t in ipairs( tConstraintsData ) do
+
+			local pConstrained1 = constraint_t.Ent1
+
+			if ( not IsWorld( pConstrained1 ) ) then
+				GetAllConstrainedSequential( pConstrained1, output, map )
+			end
+
+			local pConstrained2 = constraint_t.Ent2
+
+			if ( not IsWorld( pConstrained2 ) ) then
+				GetAllConstrainedSequential( pConstrained2, output, map )
+			end
+
+		end
+
+	end
+
+	return output
+
+end
+
+--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Collects objects to be unfreezed
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+local IsNonUnfreezable = CEntity.GetUnFreezable
+local GetPhysicsObjectCount = CEntity.GetPhysicsObjectCount
+local GetPhysicsObjectNum = CEntity.GetPhysicsObjectNum
+local GamemodeCall = gamemode.Call
+
 local function CollectUnfreezables( pPlayer, pLookupEntity )
 
 	local unfreezables = { [0] = 0 }
 
-	for _, pEntity in ipairs( GetAllConstrainedSequentially( pLookupEntity ) ) do
+	for _, pEntity in ipairs( GetAllConstrainedSequential( pLookupEntity ) ) do
 
 		if ( IsNonUnfreezable( pEntity ) ) then
 			continue
@@ -110,6 +217,8 @@ end
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Starts gradual unfreezing for the player
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+local GetEyeTrace = CPlayer.GetEyeTrace
+
 function PhysCrashGuard.StartGradualUnfreezing( pPlayer )
 
 	-- Compatibility: Physgun Unfreeze Over Time
@@ -137,7 +246,7 @@ function PhysCrashGuard.StartGradualUnfreezing( pPlayer )
 
 		m_tPhysObjs = tPhysObjs;
 
-		m_iNextTime = GetCurTime() + DELAY_NEXTUNFREEZE;
+		m_iNextTime = CurTime() + DELAY_NEXTUNFREEZE;
 		m_iCurrent = 1
 
 	}
@@ -169,6 +278,8 @@ end )
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Processes gradual unfreezing for the player
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+local HasPlayerReleasedKey = CPlayer.KeyReleased
+
 function PhysCrashGuard.ProcessGradualUnfreezing( pPlayer )
 
 	-- Compatibility: Physgun Unfreeze Over Time
@@ -183,7 +294,7 @@ function PhysCrashGuard.ProcessGradualUnfreezing( pPlayer )
 		return
 	end
 
-	local flCurTime = GetCurTime()
+	local flCurTime = CurTime()
 
 	local tPhysObjs = pStateUnfreezing.m_tPhysObjs
 
@@ -276,7 +387,7 @@ function PhysCrashGuard.ProcessGradualUnfreezing( pPlayer )
 		--
 		local pEntity = pPhysObj:GetEntity()
 
-		TryToRestore( pEntity )
+		PhysCrashGuard.TryToRestore( pEntity )
 
 		pPhysObj:EnableMotion( true )
 		pPhysObj:Wake()

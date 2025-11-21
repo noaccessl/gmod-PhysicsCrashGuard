@@ -7,23 +7,6 @@
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Prepare
-–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
---
--- Metamethods
---
-local CEntity = FindMetaTable( 'Entity' )
-
-local GetPhysicsObjectCount = CEntity.GetPhysicsObjectCount
-local GetPhysicsObjectNum = CEntity.GetPhysicsObjectNum
-
---
--- Functions
---
-local ipairs = ipairs
-
-
---[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Parameter
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local g_bFreezeDupesOnPaste
@@ -58,6 +41,10 @@ end
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Catch & freeze just pasted dupes
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+local CEntity = FindMetaTable( 'Entity' )
+local GetPhysicsObjectCount = CEntity.GetPhysicsObjectCount
+local GetPhysicsObjectNum = CEntity.GetPhysicsObjectNum
+
 local function FreezeEntities( pArrayOfEntities )
 
 	for _, pEntity in ipairs( pArrayOfEntities ) do
