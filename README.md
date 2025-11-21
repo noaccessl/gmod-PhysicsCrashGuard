@@ -1,6 +1,6 @@
 
 # gmod-PhysicsCrashGuard
-A GLua system that effectively detects and prevents crash attempts via physics objects.
+A GLua system that effectively detects and prevents crash attempts via physics objects, keeping physics available for all.
 
 ---
 

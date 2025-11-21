@@ -1,6 +1,6 @@
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
-	A system that effectively detects and prevents crash attempts via physics objects.
+	A system that effectively detects and prevents crash attempts via physics objects, keeping physics available for all.
 
 	Find on GitHub: https://github.com/noaccessl/gmod-PhysicsCrashGuard
 	Get on Steam Workshop: https://steamcommunity.com/sharedfiles/filedetails/?id=3148349097
