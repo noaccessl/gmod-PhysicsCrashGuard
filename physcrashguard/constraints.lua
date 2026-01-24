@@ -23,16 +23,10 @@ hook.Add( 'OnEntityCreated', 'PhysCrashGuard_SlidersWorkaround', function( pEnti
 	if ( pEntity:GetClass() == 'phys_slideconstraint' ) then
 
 		local pConstrained1 = pEntity.Ent1
-
-		if ( not IsValid( pConstrained1 ) ) then
-			return
-		end
+		if ( not IsValid( pConstrained1 ) ) then return end
 
 		local pConstrained2 = pEntity.Ent2
-
-		if ( not IsValid( pConstrained2 ) ) then
-			return
-		end
+		if ( not IsValid( pConstrained2 ) ) then return end
 
 		local vecPos1 = pConstrained1:GetPos()
 		local vecPos2 = pConstrained2:GetPos()
