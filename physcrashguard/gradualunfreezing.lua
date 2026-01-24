@@ -253,9 +253,7 @@ function PhysCrashGuard.StartGradualUnfreezing( pPlayer )
 
 	-- Notify
 	net.Start( 'physcrashguard_gradualunfreezing' )
-
 		net.WriteUInt( UNFREEZE_START, MAX_UNFREEZE_BITS )
-
 	net.Send( pPlayer )
 
 	return false
@@ -322,9 +320,7 @@ function PhysCrashGuard.ProcessGradualUnfreezing( pPlayer )
 
 		-- Notify
 		net.Start( 'physcrashguard_gradualunfreezing' )
-
 			net.WriteUInt( UNFREEZE_ABORT, MAX_UNFREEZE_BITS )
-
 		net.Send( pPlayer )
 
 		return
@@ -344,10 +340,8 @@ function PhysCrashGuard.ProcessGradualUnfreezing( pPlayer )
 
 		-- Notify
 		net.Start( 'physcrashguard_gradualunfreezing' )
-
 			net.WriteUInt( UNFREEZE_DONE, MAX_UNFREEZE_BITS )
 			net.WriteUInt( iTotal, MAX_EDICT_BITS )
-
 		net.Send( pPlayer )
 
 		return
@@ -373,9 +367,7 @@ function PhysCrashGuard.ProcessGradualUnfreezing( pPlayer )
 
 			-- Notify
 			net.Start( 'physcrashguard_gradualunfreezing' )
-
 				net.WriteUInt( UNFREEZE_ABORT, MAX_UNFREEZE_BITS )
-
 			net.Send( pPlayer )
 
 			return
@@ -397,11 +389,9 @@ function PhysCrashGuard.ProcessGradualUnfreezing( pPlayer )
 
 		-- Notify
 		net.Start( 'physcrashguard_gradualunfreezing' )
-
 			net.WriteUInt( UNFREEZE_PROGRESS, MAX_UNFREEZE_BITS )
 			net.WriteFloat( iCurrent / iTotal )
 			net.WriteEntity( pEntity )
-
 		net.Send( pPlayer )
 
 	end
