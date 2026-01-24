@@ -168,25 +168,20 @@ local g_colUnfreezing = Color( 76, 255, 255 )
 local g_colAbort = Color( 255 - g_colUnfreezing.r, 255 - g_colUnfreezing.g, 255 - g_colUnfreezing.b )
 -- Let's have inverted color
 
-local g_colDisplaying = g_colUnfreezing
-
 hook.Add( 'PreDrawHalos', 'PhysCrashGuard_GradualUnfreezing', function()
 
 	local tUnfreezingEntities = g_pUnfreezingQueue:GetAll()
+	if ( #tUnfreezingEntities == 0 ) then return end
 
-	if ( #tUnfreezingEntities == 0 ) then
-		return
-	end
-
-	local iStatus = g_pUnfreezingQueue:GetStatus()
-
-	if ( iStatus == UNFREEZE_ABORT ) then
-		g_colDisplaying = g_colAbort
-	else
-		g_colDisplaying = g_colUnfreezing
-	end
-
-	halo.Add( tUnfreezingEntities, g_colDisplaying, 2, 2, 1, true, true )
+	halo.Add(
+		tUnfreezingEntities,
+		( g_pUnfreezingQueue:GetStatus() == UNFREEZE_ABORT ) and g_colAbort or g_colUnfreezing,
+		2,
+		2,
+		1,
+		true,
+		true
+	)
 
 end )
 
@@ -202,12 +197,17 @@ net.Receive( 'physcrashguard_gradualunfreezing', function()
 		local cl_weaponcolor = GetConVar( 'cl_weaponcolor' )
 
 		if ( cl_weaponcolor ) then
-			g_colUnfreezing = Vector( cl_weaponcolor:GetString() ):ToColor()
+
+			local x, y, z = string.match( cl_weaponcolor:GetString(), '(.+) (.+) (.+)' )
+			g_colUnfreezing:SetUnpacked( x * 255, y * 255, z * 255 )
+
 		else
-			g_colUnfreezing = Color( 76, 255, 255 )
+
+			g_colUnfreezing:SetUnpacked( 76, 255, 255 )
+
 		end
 
-		g_colAbort = Color( 255 - g_colUnfreezing.r, 255 - g_colUnfreezing.g, 255 - g_colUnfreezing.b )
+		g_colAbort:SetUnpacked( 255 - g_colUnfreezing.r, 255 - g_colUnfreezing.g, 255 - g_colUnfreezing.b )
 
 	end
 
