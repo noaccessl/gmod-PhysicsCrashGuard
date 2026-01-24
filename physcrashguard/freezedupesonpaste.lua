@@ -11,21 +11,14 @@
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local g_bFreezeDupesOnPaste
 
---
--- ConVar Setting
---
+-- Configurational ConVar
 do
 
 	local physcrashguard_freezedupesonpaste = CreateConVar(
-
-		'physcrashguard_freezedupesonpaste',
-		'1',
-
+		'physcrashguard_freezedupesonpaste', '1',
 		FCVAR_ARCHIVE,
-
 		'Should dupes be freezed on paste?',
 		0, 1
-
 	)
 
 	g_bFreezeDupesOnPaste = physcrashguard_freezedupesonpaste:GetBool()
@@ -34,7 +27,7 @@ do
 
 		g_bFreezeDupesOnPaste = tobool( value )
 
-	end, 'Main' )
+	end, 'PhysCrashGuard' )
 
 end
 
@@ -71,11 +64,7 @@ end
 --
 hook.Add( 'CanCreateUndo', 'PhysCrashGuard_FreezeDupesOnPaste', function( _, ptUndo )
 
-	if ( ptUndo.Name ~= 'Duplicator' ) then
-		return
-	end
-
-	if ( g_bFreezeDupesOnPaste ) then
+	if ( ptUndo.Name == 'Duplicator' and g_bFreezeDupesOnPaste ) then
 		FreezeEntities( ptUndo.Entities )
 	end
 
