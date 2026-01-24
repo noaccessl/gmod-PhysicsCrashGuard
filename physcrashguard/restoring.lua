@@ -49,10 +49,10 @@ local function Restore( pEntity, entity_t, pPhysObj )
 
 	end
 
-	SetCollisionGroup( pEntity, ptPhysHangDetails.iEntityLastCollisionGroup )
+	SetCollisionGroup( pEntity, ptPhysHangDetails.iLastEntityCollisionGroup )
 
-	local ptLastColor = ptPhysHangDetails.colEntityLast
-	SetRenderMode( pEntity, ptPhysHangDetails.iEntityLastRenderMode )
+	local ptLastColor = ptPhysHangDetails.tLastEntityColor
+	SetRenderMode( pEntity, ptPhysHangDetails.iLastEntityRenderMode )
 	SetColor4Part( pEntity, ptLastColor[1], ptLastColor[2], ptLastColor[3], ptLastColor[4] )
 
 	DrawShadow( pEntity, true )
