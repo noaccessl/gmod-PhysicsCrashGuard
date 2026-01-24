@@ -16,30 +16,23 @@ local g_bResolveScheduled = false
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local g_flHangThreshold
 
---
--- ConVar Setting
---
+-- Configurational ConVar
 do
 
 	local physcrashguard_hangthreshold = CreateConVar(
-
-		'physcrashguard_hangthreshold',
-		'14',
-
+		'physcrashguard_hangthreshold', '15',
 		FCVAR_ARCHIVE,
-
 		'Threshold for counting last physics simulation duration as physics hang, in ms.',
 		4, 2000
-
 	)
 
 	g_flHangThreshold = physcrashguard_hangthreshold:GetFloat() / 1000
 
 	cvars.AddChangeCallback( 'physcrashguard_hangthreshold', function( _, _, value )
 
-		g_flHangThreshold = ( tonumber( value ) or 14 ) / 1000
+		g_flHangThreshold = ( tonumber( value ) or 15 ) / 1000
 
-	end, 'Main' )
+	end, 'PhysCrashGuard' )
 
 end
 
@@ -69,6 +62,9 @@ local GetEntityTable = CEntity.GetTable
 
 function PhysCrashGuard.ResolveHang()
 
+	--
+	-- Schedule the resolve
+	--
 	if ( not g_bResolveScheduled ) then
 
 		physenv.SetPhysicsPaused( true )
@@ -78,9 +74,14 @@ function PhysCrashGuard.ResolveHang()
 
 	end
 
+	--
+	-- The main action
+	--
 	g_bResolveScheduled = false
 
-	for _, pPhysObj in ipairs( PhysCollector() ) do
+	local array = PhysCollector()
+
+	for _, pPhysObj in ipairs( array ) do
 
 		local pEntity = pPhysObj:GetEntity()
 
@@ -100,6 +101,18 @@ function PhysCrashGuard.ResolveHang()
 		if ( pPhysObj:IsPenetrating() ) then
 			ResolveSimple( pPhysObj, pEntity, GetEntityTable( pEntity ) )
 		end
+
+	end
+
+	do
+
+		local i = #array
+
+		::clear::
+		array[i] = nil
+		if ( i ~= 0 ) then i = i - 1; goto clear end
+
+		array = nil
 
 	end
 
