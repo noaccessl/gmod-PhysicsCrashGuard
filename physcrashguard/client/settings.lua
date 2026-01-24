@@ -2,31 +2,23 @@
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Some settings to Spawn Menu
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local command
-
 local function fnSetupSettings( pPage )
 
-	command = 'physcrashguard_hangthreshold'
-	pPage:AddControl( 'Slider', {
+	local cvar
 
-		Label = 'Hang threshold';
-		Command = command;
-		Type = 'Float';
-		Min = 4;
-		Max = 200
+	cvar = GetConVar( 'physcrashguard_hangthreshold' )
+	pPage:NumSlider( 'Hang threshold', cvar:GetName(), cvar:GetMin(), cvar:GetMax(), 2 )
+	pPage:ControlHelp( cvar:GetHelpText() )
 
-	} )
-	pPage:ControlHelp( GetConVar( command ):GetHelpText() )
+	cvar = GetConVar( 'physcrashguard_delete' )
+	pPage:СheckBox( 'Delete on resolve', cvar:GetName() )
+	pPage:ControlHelp( cvar:GetHelpText() )
 
-	command = 'physcrashguard_delete'
-	pPage:AddControl( 'CheckBox', { Label = 'Delete on resolve'; Command = command } )
-	pPage:ControlHelp( GetConVar( command ):GetHelpText() )
+	cvar = GetConVar( 'physcrashguard_freezedupesonpaste' )
+	pPage:СheckBox( 'Freeze dupes on paste', cvar:GetName() )
+	pPage:ControlHelp( cvar:GetHelpText() )
 
-	command = 'physcrashguard_freezedupesonpaste'
-	pPage:AddControl( 'CheckBox', { Label = 'Freeze dupes on paste'; Command = command } )
-	pPage:ControlHelp( GetConVar( command ):GetHelpText() )
-
-	command = nil
+	cvar = nil
 
 end
 
@@ -37,8 +29,7 @@ hook.Add( 'PopulateToolMenu', 'PhysCrashGuard_Settings', function()
 		'Admin',
 		'PhysCrashGuard',
 		'Physics Crash Guard',
-		'',
-		'',
+		'', '',
 		fnSetupSettings
 	)
 
