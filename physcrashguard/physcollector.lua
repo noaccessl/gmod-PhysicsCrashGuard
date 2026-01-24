@@ -1,7 +1,7 @@
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 
 	Collector for almost all non-static physics objects
-	that may potentially collide at some point in time
+	that may collide at some point in time
 
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 
@@ -25,7 +25,7 @@ end
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Collector
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local INPUT_SKIP = {
+local COLLECTOR_IGNORE = {
 
 	prop_door_rotating = true;
 	prop_dynamic = true
@@ -53,7 +53,7 @@ function PhysCrashGuard.PhysCollector()
 
 		local classname = GetClass( pEntity )
 
-		if ( INPUT_SKIP[classname]
+		if ( COLLECTOR_IGNORE[classname]
 			or strsub( classname, 1, 5 ) == 'func_'
 			or IsWorld( pEntity ) ) then
 			continue
@@ -64,10 +64,7 @@ function PhysCrashGuard.PhysCollector()
 			local pPhysObj = GetPhysicsObjectNum( pEntity, num )
 
 			if ( pPhysObj:IsValid() ) then
-
-				i = i + 1
-				array[i] = pPhysObj
-
+				i = i + 1; array[i] = pPhysObj
 			end
 
 		end
