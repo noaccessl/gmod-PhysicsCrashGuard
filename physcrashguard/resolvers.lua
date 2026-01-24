@@ -37,21 +37,14 @@ local RENDERMODE_TRANSCOLOR = RENDERMODE_TRANSCOLOR
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local g_bDeleteOnResolve
 
---
--- ConVar Setting
---
+-- Configurational ConVar
 do
 
 	local physcrashguard_delete = CreateConVar(
-
-		'physcrashguard_delete',
-		'0',
-
+		'physcrashguard_delete', '0',
 		FCVAR_ARCHIVE,
-
 		'Experimental. Should entities to resolve be deleted? Won\'t apply to ragdolls.',
 		0, 1
-
 	)
 
 	g_bDeleteOnResolve = physcrashguard_delete:GetBool()
@@ -60,7 +53,7 @@ do
 
 		g_bDeleteOnResolve = tobool( value )
 
-	end, 'Main' )
+	end, 'PhysCrashGuard' )
 
 end
 
@@ -86,10 +79,10 @@ function PhysCrashGuard.ResolveSimple( pPhysObj, pEntity, entity_t )
 
 	entity_t.m_tPhysHangDetails = {
 
-		iEntityLastCollisionGroup = GetCollisionGroup( pEntity );
+		iLastEntityCollisionGroup = GetCollisionGroup( pEntity );
 
-		iEntityLastRenderMode = GetRenderMode( pEntity );
-		colEntityLast = { r; g; b; a }
+		iLastEntityRenderMode = GetRenderMode( pEntity );
+		tLastEntityColor = { r; g; b; a }
 
 	}
 
@@ -134,10 +127,10 @@ function PhysCrashGuard.ResolveRagdoll( pPhysPart, pRagdoll, entity_t )
 
 	entity_t.m_tPhysHangDetails = {
 
-		iEntityLastCollisionGroup = GetCollisionGroup( pRagdoll );
+		iLastEntityCollisionGroup = GetCollisionGroup( pRagdoll );
 
-		iEntityLastRenderMode = GetRenderMode( pRagdoll );
-		colEntityLast = { r; g; b; a };
+		iLastEntityRenderMode = GetRenderMode( pRagdoll );
+		tLastEntityColor = { r; g; b; a };
 
 		tPhysParts = {
 
