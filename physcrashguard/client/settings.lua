@@ -11,11 +11,11 @@ local function fnSetupSettings( pPage )
 	pPage:ControlHelp( cvar:GetHelpText() )
 
 	cvar = GetConVar( 'physcrashguard_delete' )
-	pPage:СheckBox( 'Delete on resolve', cvar:GetName() )
+	pPage:CheckBox( 'Delete on resolve', cvar:GetName() )
 	pPage:ControlHelp( cvar:GetHelpText() )
 
 	cvar = GetConVar( 'physcrashguard_freezedupesonpaste' )
-	pPage:СheckBox( 'Freeze dupes on paste', cvar:GetName() )
+	pPage:CheckBox( 'Freeze dupes on paste', cvar:GetName() )
 	pPage:ControlHelp( cvar:GetHelpText() )
 
 	cvar = nil
