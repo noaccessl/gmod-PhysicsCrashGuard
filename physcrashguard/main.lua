@@ -19,23 +19,43 @@ PhysCrashGuard = PhysCrashGuard or {}
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 if ( SERVER ) then
 
-	include( 'resolvers.lua' )
+	--
+	-- Main
+	--
+	include( 'resolvers.lua' ) ; AddCSLuaFile( 'resolvers.lua' )
 	include( 'physcollector.lua' )
-	include( 'hang.lua' )
+	include( 'hang.lua' ) ; AddCSLuaFile( 'hang.lua' )
 	include( 'restoring.lua' )
 
+	--
+	-- Secondary
+	--
 	include( 'constraints.lua' )
 
 	include( 'gradualunfreezing.lua' )
 
-	include( 'freezedupesonpaste.lua' )
+	include( 'freezedupesonpaste.lua' ) ; AddCSLuaFile( 'freezedupesonpaste.lua' )
 
+	--
+	-- Clientside stuff
+	--
 	AddCSLuaFile( 'client/settings.lua' )
 
 	AddCSLuaFile( 'client/gradualunfreezing.lua' )
 
 elseif ( CLIENT ) then
 
+	--
+	-- ConVars Sync with client
+	--
+	include( 'resolvers.lua' )
+	include( 'hang.lua' )
+
+	include( 'freezedupesonpaste.lua' )
+
+	--
+	-- Clientside stuff
+	--
 	include( 'client/settings.lua' )
 
 	include( 'client/gradualunfreezing.lua' )

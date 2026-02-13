@@ -7,6 +7,25 @@
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+	Configurational ConVar
+–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+local physcrashguard_hangthreshold = CreateConVar(
+	'physcrashguard_hangthreshold', '15',
+	FCVAR_ARCHIVE + FCVAR_REPLICATED,
+	'Threshold for counting last physics simulation duration as physics hang, in ms.',
+	4, 2000
+)
+
+if ( CLIENT ) then
+
+	physcrashguard_hangthreshold = nil
+
+	-- Return. Only the convar is needed for clientside settings.
+	return
+
+end
+
+--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Intermediate variable
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 local g_bResolveScheduled = false
@@ -14,27 +33,13 @@ local g_bResolveScheduled = false
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Parameter
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local g_flHangThreshold
+local g_flHangThreshold = physcrashguard_hangthreshold:GetFloat() / 1000
 
--- Configurational ConVar
-do
+cvars.AddChangeCallback( 'physcrashguard_hangthreshold', function( _, _, value )
 
-	local physcrashguard_hangthreshold = CreateConVar(
-		'physcrashguard_hangthreshold', '15',
-		FCVAR_ARCHIVE,
-		'Threshold for counting last physics simulation duration as physics hang, in ms.',
-		4, 2000
-	)
+	g_flHangThreshold = ( tonumber( value ) or 15 ) / 1000
 
-	g_flHangThreshold = physcrashguard_hangthreshold:GetFloat() / 1000
-
-	cvars.AddChangeCallback( 'physcrashguard_hangthreshold', function( _, _, value )
-
-		g_flHangThreshold = ( tonumber( value ) or 15 ) / 1000
-
-	end, 'PhysCrashGuard' )
-
-end
+end, 'PhysCrashGuard' )
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Checks for hang in physics simulation

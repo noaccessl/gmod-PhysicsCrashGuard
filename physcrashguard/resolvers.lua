@@ -7,6 +7,25 @@
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+	Configurational ConVar
+–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+local physcrashguard_delete = CreateConVar(
+	'physcrashguard_delete', '0',
+	FCVAR_ARCHIVE + FCVAR_REPLICATED,
+	'Experimental. Should entities to resolve be deleted? Won\'t apply to ragdolls.',
+	0, 1
+)
+
+if ( CLIENT ) then
+
+	physcrashguard_delete = nil
+
+	-- Return. Only the convar is needed for clientside settings.
+	return
+
+end
+
+--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Prepare
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
 --
@@ -35,27 +54,13 @@ local RENDERMODE_TRANSCOLOR = RENDERMODE_TRANSCOLOR
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Parameter
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local g_bDeleteOnResolve
+local g_bDeleteOnResolve = physcrashguard_delete:GetBool()
 
--- Configurational ConVar
-do
+cvars.AddChangeCallback( 'physcrashguard_delete', function( _, _, value )
 
-	local physcrashguard_delete = CreateConVar(
-		'physcrashguard_delete', '0',
-		FCVAR_ARCHIVE,
-		'Experimental. Should entities to resolve be deleted? Won\'t apply to ragdolls.',
-		0, 1
-	)
+	g_bDeleteOnResolve = tobool( value )
 
-	g_bDeleteOnResolve = physcrashguard_delete:GetBool()
-
-	cvars.AddChangeCallback( 'physcrashguard_delete', function( _, _, value )
-
-		g_bDeleteOnResolve = tobool( value )
-
-	end, 'PhysCrashGuard' )
-
-end
+end, 'PhysCrashGuard' )
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	ResolveSimple

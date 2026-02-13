@@ -7,29 +7,34 @@
 
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-	Parameter
+	Configurational ConVar
 –––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
-local g_bFreezeDupesOnPaste
+local physcrashguard_freezedupesonpaste = CreateConVar(
+	'physcrashguard_freezedupesonpaste', '1',
+	FCVAR_ARCHIVE + FCVAR_REPLICATED,
+	'Should dupes be freezed on paste?',
+	0, 1
+)
 
--- Configurational ConVar
-do
+if ( CLIENT ) then
 
-	local physcrashguard_freezedupesonpaste = CreateConVar(
-		'physcrashguard_freezedupesonpaste', '1',
-		FCVAR_ARCHIVE,
-		'Should dupes be freezed on paste?',
-		0, 1
-	)
+	physcrashguard_freezedupesonpaste = nil
 
-	g_bFreezeDupesOnPaste = physcrashguard_freezedupesonpaste:GetBool()
-
-	cvars.AddChangeCallback( 'physcrashguard_freezedupesonpaste', function( _, _, value )
-
-		g_bFreezeDupesOnPaste = tobool( value )
-
-	end, 'PhysCrashGuard' )
+	-- Return. Only the convar is needed for clientside settings.
+	return
 
 end
+
+--[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
+	Parameter
+–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––]]
+local g_bFreezeDupesOnPaste = physcrashguard_freezedupesonpaste:GetBool()
+
+cvars.AddChangeCallback( 'physcrashguard_freezedupesonpaste', function( _, _, value )
+
+	g_bFreezeDupesOnPaste = tobool( value )
+
+end, 'PhysCrashGuard' )
 
 --[[–––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 	Purpose: Catch & freeze just pasted dupes
